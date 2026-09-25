@@ -5,12 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "pnpm games:scan && tsc -b && vite build",
+    "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "games:scan": "node scripts/generate-games.mjs",
-    "games:thumbnails": "node scripts/generate-thumbnails.mjs",
-    "games:build": "pnpm games:thumbnails && pnpm games:scan"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@mercuryworkshop/epoxy-transport": "^3.0.1",
