@@ -1,0 +1,49 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Local credentials and machine-specific environment files
+.env
+.env.*
+
+# Hosting credentials and generated local data
+.netlify/
+.wrangler/
+backups/
+temp-games/
+Offline-HTML-Games-Pack/
+.wisp-server-fix/
+*.proxy-backup-*
+satona-inspect.txt
+src/**/*backup*
+src/**/*before-*
+src/**/*.bak
+src/**/*.broken
+satona-lovable-import.zip
+
+# Game HTML is loaded from the GN-Math GitHub repositories.
+# The local copy is a multi-gigabyte cache and should not be committed.
+public/games/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.vercel

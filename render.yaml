@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: satona-wisp-server
+    runtime: node
+    rootDir: wisp-server
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz

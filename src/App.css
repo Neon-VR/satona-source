@@ -1,0 +1,1617 @@
+:root {
+  --satona-accent: #8b5cf6;
+  --satona-accent-2: #a78bfa;
+  --satona-bg: #050611;
+  --satona-panel: rgba(13, 15, 29, .88);
+  --satona-panel-solid: #0d0f1d;
+  --satona-border: rgba(255,255,255,.09);
+  --satona-text: #f5f3ff;
+  --satona-muted: #9795aa;
+  --satona-danger: #f87171;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: #050611;
+  color: var(--satona-text);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  color: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--satona-accent-2);
+  outline-offset: 2px;
+}
+
+/* =========================================================
+   DESKTOP
+========================================================= */
+
+.webos-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #050611;
+  color: var(--satona-text);
+  isolation: isolate;
+}
+
+.webos-wallpaper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: -5;
+  background:
+    radial-gradient(
+      circle at 72% 22%,
+      rgba(124, 58, 237, .22),
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 24% 75%,
+      rgba(59, 130, 246, .13),
+      transparent 27%
+    ),
+    linear-gradient(
+      135deg,
+      #02030a,
+      #070a19 48%,
+      #0b0617
+    );
+}
+
+.custom-wallpaper-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -4;
+}
+
+.stars {
+  position: absolute;
+  inset: -30%;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,.8) 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(255,255,255,.35) 1px, transparent 1.5px);
+  background-size: 85px 85px, 145px 145px;
+  animation: starDrift 100s linear infinite;
+  opacity: .4;
+}
+
+.stars-b {
+  transform: scale(1.5);
+  animation-duration: 150s;
+  opacity: .2;
+}
+
+.stars-c {
+  transform: scale(2);
+  animation-duration: 200s;
+  opacity: .12;
+}
+
+.nebula {
+  position: absolute;
+  width: 65vw;
+  height: 38vw;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: .2;
+  mix-blend-mode: screen;
+}
+
+.nebula-a {
+  top: -10%;
+  right: -10%;
+  background: #7c3aed;
+  animation: nebulaFloat 25s ease-in-out infinite alternate;
+}
+
+.nebula-b {
+  bottom: -15%;
+  left: -15%;
+  background: #2563eb;
+  animation: nebulaFloat 32s ease-in-out infinite alternate-reverse;
+}
+
+.nebula-c {
+  top: 35%;
+  left: 38%;
+  width: 32vw;
+  height: 20vw;
+  background: #ec4899;
+  opacity: .08;
+  animation: nebulaFloat 20s ease-in-out infinite alternate;
+}
+
+.galaxy-orb {
+  position: absolute;
+  width: 42vw;
+  height: 42vw;
+  right: -16vw;
+  top: 7vh;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 40% 35%,
+      rgba(255,255,255,.06),
+      transparent 12%
+    ),
+    radial-gradient(
+      circle,
+      rgba(139,92,246,.13),
+      rgba(59,130,246,.03) 48%,
+      transparent 70%
+    );
+  filter: blur(1px);
+  animation: orbFloat 18s ease-in-out infinite;
+}
+
+@keyframes starDrift {
+  from {
+    transform: translate3d(0,0,0) rotate(0deg);
+  }
+  to {
+    transform: translate3d(6%,4%,0) rotate(8deg);
+  }
+}
+
+@keyframes nebulaFloat {
+  from {
+    transform: translate3d(-2%,-2%,0) scale(1);
+  }
+  to {
+    transform: translate3d(5%,4%,0) scale(1.1);
+  }
+}
+
+@keyframes orbFloat {
+  0%,100% {
+    transform: translate3d(0,0,0) scale(1);
+  }
+  50% {
+    transform: translate3d(-2%,2%,0) scale(1.04);
+  }
+}
+
+.desktop-widget {
+  position: absolute;
+  right: 30px;
+  top: 26px;
+  width: 240px;
+  padding: 18px 20px;
+  border: 1px solid var(--satona-border);
+  border-radius: 22px;
+  background: rgba(8,10,20,.48);
+  backdrop-filter: blur(22px);
+  box-shadow: 0 20px 70px rgba(0,0,0,.22);
+}
+
+.widget-time {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -.04em;
+}
+
+.widget-date {
+  margin-top: 2px;
+  color: var(--satona-muted);
+  font-size: 13px;
+}
+
+.widget-weather {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  padding-top: 12px;
+  border-top: 1px solid var(--satona-border);
+  font-size: 12px;
+  color: var(--satona-muted);
+}
+
+.widget-weather span:first-child {
+  color: var(--satona-text);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.desktop-icons {
+  position: absolute;
+  left: 20px;
+  top: 22px;
+  bottom: 84px;
+  width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.desktop-icon {
+  width: 88px;
+  min-height: 82px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  border-radius: 14px;
+  background: transparent;
+  cursor: default;
+  text-shadow: 0 2px 7px rgba(0,0,0,.8);
+}
+
+.desktop-icon:hover {
+  background: rgba(255,255,255,.09);
+}
+
+.desktop-icon-art {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 15px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.13),
+      rgba(255,255,255,.03)
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.1),
+    0 10px 25px rgba(0,0,0,.22);
+}
+
+.desktop-icon > span:last-child {
+  max-width: 88px;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.15;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recycle-bin {
+  margin-top: auto;
+}
+
+/* =========================================================
+   TASKBAR
+========================================================= */
+
+.taskbar {
+  position: absolute;
+  z-index: 99999;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 20px;
+  background: rgba(10,12,23,.76);
+  backdrop-filter: blur(26px) saturate(140%);
+  box-shadow:
+    0 20px 60px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.taskbar-start,
+.taskbar-app,
+.taskbar-tray button {
+  border-radius: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.taskbar-start {
+  width: 46px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,.06);
+}
+
+.taskbar-start:hover,
+.taskbar-app:hover {
+  background: rgba(255,255,255,.1);
+}
+
+.satona-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: white;
+  font-weight: 800;
+  letter-spacing: -.03em;
+}
+
+.satona-logo img {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.satona-logo.compact img {
+  width: 34px;
+  height: 34px;
+}
+
+.taskbar-search {
+  width: 210px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 14px;
+  border: 1px solid var(--satona-border);
+  border-radius: 14px;
+  color: var(--satona-muted);
+  background: rgba(255,255,255,.04);
+  cursor: pointer;
+  text-align: left;
+}
+
+.taskbar-search:hover {
+  color: var(--satona-text);
+  background: rgba(255,255,255,.07);
+}
+
+.taskbar-pinned {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.taskbar-app {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #ddd8f7;
+}
+
+.taskbar-app.active::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 14px;
+  height: 2px;
+  border-radius: 10px;
+  background: var(--satona-accent-2);
+  transform: translateX(-50%);
+}
+
+.taskbar-spacer {
+  flex: 1;
+}
+
+.taskbar-tray {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 0 12px;
+  color: var(--satona-muted);
+}
+
+.tray-time {
+  color: var(--satona-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   WINDOWS
+========================================================= */
+
+.os-window {
+  position: absolute;
+  overflow: hidden;
+  min-width: 520px;
+  min-height: 320px;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 16px;
+  background: var(--satona-panel-solid);
+  box-shadow:
+    0 35px 100px rgba(0,0,0,.48),
+    0 10px 35px rgba(0,0,0,.22);
+}
+
+.os-window.maximized {
+  border-radius: 0;
+}
+
+.window-titlebar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 15px;
+  border-bottom: 1px solid var(--satona-border);
+  background: rgba(18,20,34,.92);
+  cursor: grab;
+  user-select: none;
+}
+
+.window-titlebar:active {
+  cursor: grabbing;
+}
+
+.window-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #e9e7f5;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.window-controls {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.window-controls button {
+  width: 42px;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--satona-muted);
+  cursor: pointer;
+}
+
+.window-controls button:hover {
+  background: rgba(255,255,255,.07);
+  color: white;
+}
+
+.window-controls .window-close:hover {
+  background: #d64545;
+  color: white;
+}
+
+.window-content {
+  width: 100%;
+  height: calc(100% - 44px);
+  overflow: hidden;
+}
+
+/* =========================================================
+   PROXIED APPS
+========================================================= */
+
+.proxied-app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #080910;
+}
+
+.proxied-frame {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border: 0;
+  background: white;
+}
+
+.proxy-error {
+  position: absolute;
+  z-index: 3;
+  left: 20px;
+  right: 20px;
+  top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border: 1px solid rgba(248,113,113,.25);
+  border-radius: 13px;
+  background: rgba(50,12,18,.92);
+  color: #fecaca;
+}
+
+/* =========================================================
+   UTILITY APPS
+========================================================= */
+
+.utility-app,
+.store-app,
+.games-app,
+.settings-app {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background:
+    radial-gradient(
+      circle at 80% 0%,
+      rgba(139,92,246,.09),
+      transparent 28%
+    ),
+    #090b15;
+}
+
+.utility-toolbar {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 25px;
+  border-bottom: 1px solid var(--satona-border);
+}
+
+.utility-toolbar strong {
+  display: block;
+  font-size: 19px;
+}
+
+.utility-toolbar span {
+  display: block;
+  margin-top: 3px;
+  color: var(--satona-muted);
+  font-size: 11px;
+}
+
+.utility-toolbar button,
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border: 1px solid var(--satona-border);
+  border-radius: 10px;
+  background: rgba(255,255,255,.05);
+  cursor: pointer;
+}
+
+.utility-toolbar button:hover,
+.secondary-button:hover {
+  background: rgba(255,255,255,.09);
+}
+
+.files-path {
+  padding: 16px 25px;
+  color: var(--satona-muted);
+  font-size: 12px;
+}
+
+.file-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(150px,1fr));
+  gap: 12px;
+  padding: 0 25px 25px;
+}
+
+.file-card {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--satona-border);
+  border-radius: 15px;
+  background: rgba(255,255,255,.035);
+  cursor: pointer;
+}
+
+.file-card:hover {
+  border-color: rgba(167,139,250,.4);
+  background: rgba(139,92,246,.08);
+}
+
+.file-card span {
+  font-size: 12px;
+}
+
+/* =========================================================
+   STORE
+========================================================= */
+
+.store-app,
+.games-app {
+  padding: 32px;
+}
+
+.store-heading,
+.games-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 25px;
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  color: #a78bfa;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .15em;
+}
+
+.store-heading h1,
+.games-heading h1,
+.settings-title h1 {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: -.04em;
+}
+
+.store-heading p,
+.games-heading p,
+.settings-title p {
+  margin: 6px 0 0;
+  color: var(--satona-muted);
+  font-size: 13px;
+}
+
+.store-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(250px,1fr));
+  gap: 15px;
+}
+
+.store-card {
+  display: flex;
+  gap: 16px;
+  min-height: 180px;
+  padding: 19px;
+  border: 1px solid var(--satona-border);
+  border-radius: 17px;
+  background: rgba(255,255,255,.035);
+}
+
+.store-icon {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(139,92,246,.16);
+  color: #c4b5fd;
+}
+
+.store-card-body {
+  min-width: 0;
+}
+
+.store-card h2 {
+  margin: 2px 0 7px;
+  font-size: 16px;
+}
+
+.store-card p {
+  min-height: 40px;
+  margin: 0 0 15px;
+  color: var(--satona-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.accent-button,
+.danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: var(--satona-accent);
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.accent-button:hover {
+  background: #7c3aed;
+}
+
+.danger-button {
+  background: rgba(248,113,113,.12);
+  color: #fca5a5;
+}
+
+.store-note {
+  margin-top: 25px;
+  color: var(--satona-muted);
+  font-size: 12px;
+}
+
+/* =========================================================
+   GAMES
+========================================================= */
+
+.games-search {
+  width: 250px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--satona-border);
+  border-radius: 11px;
+  background: rgba(255,255,255,.04);
+}
+
+.games-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: white;
+  font-size: 12px;
+}
+
+.games-search input::placeholder {
+  color: var(--satona-muted);
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(240px,1fr));
+  gap: 16px;
+}
+
+.game-card {
+  overflow: hidden;
+  border: 1px solid var(--satona-border);
+  border-radius: 17px;
+  background: rgba(255,255,255,.035);
+}
+
+.game-thumbnail {
+  position: relative;
+  height: 145px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 50% 40%,
+      rgba(167,139,250,.26),
+      transparent 30%
+    ),
+    linear-gradient(135deg,#0d1020,#17102a);
+  color: #c4b5fd;
+}
+
+.game-thumb-orbit {
+  position: absolute;
+  width: 180px;
+  height: 55px;
+  border: 2px solid rgba(167,139,250,.25);
+  border-radius: 50%;
+  transform: rotate(-20deg);
+}
+
+.game-info {
+  padding: 15px;
+}
+
+.game-info h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.game-info span {
+  display: block;
+  margin: 5px 0 14px;
+  overflow: hidden;
+  color: var(--satona-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+.settings-app {
+  display: flex;
+}
+
+.settings-sidebar {
+  width: 220px;
+  flex: 0 0 auto;
+  padding: 20px 12px;
+  border-right: 1px solid var(--satona-border);
+  background: rgba(0,0,0,.12);
+}
+
+.settings-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px 18px;
+  font-weight: 700;
+}
+
+.settings-nav {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  margin-bottom: 3px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--satona-muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-nav.active,
+.settings-nav:hover {
+  background: rgba(139,92,246,.11);
+  color: white;
+}
+
+.settings-main {
+  flex: 1;
+  padding: 32px;
+  overflow: auto;
+}
+
+.settings-section {
+  max-width: 900px;
+  margin-bottom: 45px;
+}
+
+.settings-title {
+  margin-bottom: 22px;
+}
+
+.wallpaper-picker {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(120px,1fr));
+  gap: 12px;
+}
+
+.wallpaper-option {
+  position: relative;
+  height: 120px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 15px;
+  background: #111;
+  cursor: pointer;
+}
+
+.wallpaper-option.selected {
+  border-color: var(--satona-accent-2);
+}
+
+.wallpaper-option span {
+  position: absolute;
+  left: 10px;
+  bottom: 9px;
+  z-index: 2;
+  font-size: 11px;
+  font-weight: 700;
+  text-shadow: 0 2px 5px black;
+}
+
+.wallpaper-galaxy {
+  background:
+    radial-gradient(circle at 70% 20%,#7c3aed 0,transparent 35%),
+    radial-gradient(circle at 20% 80%,#2563eb 0,transparent 32%),
+    #03040b;
+}
+
+.wallpaper-violet {
+  background:
+    radial-gradient(circle at 30% 30%,#a855f7,transparent 30%),
+    radial-gradient(circle at 70% 70%,#4c1d95,transparent 40%),
+    #08020f;
+}
+
+.wallpaper-aurora {
+  background:
+    radial-gradient(ellipse at 20% 50%,#0ea5e9,transparent 40%),
+    radial-gradient(ellipse at 70% 40%,#22c55e,transparent 35%),
+    #020814;
+}
+
+.wallpaper-midnight {
+  background:
+    radial-gradient(circle at 50% 0,#1e3a8a,transparent 45%),
+    #01030a;
+}
+
+.custom-wallpaper {
+  background-size: cover;
+  background-position: center;
+}
+
+.wallpaper-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 15px;
+}
+
+.settings-hint {
+  color: var(--satona-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.installed-list {
+  border: 1px solid var(--satona-border);
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.installed-row {
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 15px;
+  border-bottom: 1px solid var(--satona-border);
+}
+
+.installed-row:last-child {
+  border-bottom: 0;
+}
+
+.installed-row > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.settings-empty {
+  padding: 25px;
+  color: var(--satona-muted);
+  font-size: 12px;
+}
+
+/* =========================================================
+   BROWSER
+========================================================= */
+
+.satona-browser {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #070811;
+}
+
+.browser-tabbar {
+  height: 44px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--satona-border);
+  background: #0c0e19;
+}
+
+.browser-brand {
+  width: 48px;
+  display: grid;
+  place-items: center;
+}
+
+.browser-brand .satona-logo img {
+  width: 29px;
+  height: 29px;
+}
+
+.browser-tabs {
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.browser-tab {
+  min-width: 145px;
+  max-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-radius: 9px 9px 0 0;
+  background: transparent;
+  color: var(--satona-muted);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.browser-tab.active {
+  background: #151827;
+  color: white;
+}
+
+.browser-tab span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.browser-tab-close {
+  margin-left: auto;
+}
+
+.browser-new-tab,
+.browser-window-actions button {
+  width: 38px;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--satona-muted);
+  cursor: pointer;
+}
+
+.browser-new-tab:hover,
+.browser-window-actions button:hover {
+  color: white;
+  background: rgba(255,255,255,.06);
+}
+
+.browser-window-spacer {
+  flex: 1;
+}
+
+.browser-window-actions {
+  height: 100%;
+  display: flex;
+}
+
+.browser-main {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+}
+
+.browser-sidebar {
+  width: 54px;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 6px;
+  border-right: 1px solid var(--satona-border);
+  background: #090b15;
+}
+
+.sidebar-action {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--satona-muted);
+  cursor: pointer;
+}
+
+.sidebar-action:hover,
+.sidebar-action.active {
+  color: white;
+  background: rgba(139,92,246,.14);
+}
+
+.sidebar-divider {
+  width: 26px;
+  height: 1px;
+  margin: 6px 0;
+  background: var(--satona-border);
+}
+
+.browser-page {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.browser-toolbar {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--satona-border);
+  background: #0b0d18;
+}
+
+.browser-nav-buttons {
+  display: flex;
+  gap: 2px;
+}
+
+.browser-nav-buttons button,
+.browser-toolbar-button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--satona-muted);
+  cursor: pointer;
+}
+
+.browser-nav-buttons button:hover,
+.browser-toolbar-button:hover {
+  color: white;
+  background: rgba(255,255,255,.07);
+}
+
+.browser-address {
+  min-width: 0;
+  height: 36px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 11px;
+  border: 1px solid var(--satona-border);
+  border-radius: 11px;
+  background: rgba(255,255,255,.045);
+  color: var(--satona-muted);
+}
+
+.browser-address input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: white;
+  font-size: 12px;
+}
+
+.browser-address input::placeholder {
+  color: #77778a;
+}
+
+.browser-address select {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--satona-muted);
+  font-size: 10px;
+}
+
+.browser-address option {
+  background: #10121f;
+}
+
+.browser-frame-wrap {
+  position: relative;
+  min-height: 0;
+  flex: 1;
+  background: white;
+}
+
+.browser-proxy-frame {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border: 0;
+  background: white;
+}
+
+.browser-frame-error {
+  position: absolute;
+  z-index: 4;
+  left: 20px;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
+  border: 1px solid rgba(248,113,113,.2);
+  border-radius: 12px;
+  background: rgba(45,10,16,.95);
+  color: #fecaca;
+}
+
+/* =========================================================
+   SPEED DIAL
+========================================================= */
+
+.speed-dial {
+  position: relative;
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  background:
+    radial-gradient(
+      circle at 50% 5%,
+      rgba(139,92,246,.18),
+      transparent 32%
+    ),
+    linear-gradient(180deg,#070817,#05060e);
+  background-size: cover;
+  background-position: center;
+}
+
+.speed-dial::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle,rgba(255,255,255,.45) 1px,transparent 1px);
+  background-size: 80px 80px;
+  opacity: .08;
+  pointer-events: none;
+}
+
+.speed-dial-content {
+  position: relative;
+  z-index: 1;
+  width: min(850px, calc(100% - 50px));
+  margin: 0 auto;
+  padding: 70px 0 60px;
+}
+
+.speed-dial-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 28px;
+}
+
+.speed-dial-heading .satona-logo img {
+  width: 65px;
+  height: 65px;
+}
+
+.speed-dial-heading .satona-logo span {
+  font-size: 24px;
+}
+
+.speed-dial-heading > span {
+  color: var(--satona-muted);
+  font-size: 12px;
+}
+
+.speed-search {
+  height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 17px;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 18px;
+  background: rgba(9,10,22,.68);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+
+.speed-search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: white;
+  font-size: 14px;
+}
+
+.speed-search input::placeholder {
+  color: #7d7d91;
+}
+
+.speed-search button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(139,92,246,.2);
+  color: #c4b5fd;
+  cursor: pointer;
+}
+
+.speed-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.speed-tile {
+  min-height: 126px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 15px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+  background: rgba(8,10,20,.58);
+  backdrop-filter: blur(15px);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform .16s ease,
+    border-color .16s ease,
+    background .16s ease;
+}
+
+.speed-tile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(167,139,250,.3);
+  background: rgba(139,92,246,.1);
+}
+
+.speed-tile-icon {
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  margin-bottom: auto;
+  border-radius: 13px;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(167,139,250,.25),
+      rgba(59,130,246,.15)
+    );
+  color: #ddd6fe;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.speed-tile strong {
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.speed-tile small {
+  margin-top: 3px;
+  color: var(--satona-muted);
+  font-size: 9px;
+}
+
+.add-tile {
+  border-style: dashed;
+}
+
+.suggestions {
+  margin-top: 30px;
+}
+
+.suggestions-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+  color: var(--satona-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.suggestions-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.suggestions-row button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border: 1px solid var(--satona-border);
+  border-radius: 10px;
+  background: rgba(255,255,255,.035);
+  color: #d8d6e8;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+.suggestions-row button span {
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: rgba(139,92,246,.16);
+}
+
+/* =========================================================
+   SEARCH PANEL
+========================================================= */
+
+.desktop-search-panel {
+  position: absolute;
+  z-index: 100000;
+  left: 50%;
+  bottom: 82px;
+  width: 450px;
+  max-height: 550px;
+  overflow: hidden;
+  transform: translateX(-50%);
+  border: 1px solid var(--satona-border);
+  border-radius: 19px;
+  background: rgba(10,12,24,.95);
+  backdrop-filter: blur(30px);
+  box-shadow: 0 30px 100px rgba(0,0,0,.5);
+}
+
+.desktop-search-heading {
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 15px;
+  border-bottom: 1px solid var(--satona-border);
+}
+
+.desktop-search-heading .satona-logo span {
+  font-size: 14px;
+}
+
+.desktop-search-heading button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--satona-muted);
+  cursor: pointer;
+}
+
+.desktop-search-panel > input {
+  width: calc(100% - 28px);
+  height: 42px;
+  margin: 14px;
+  padding: 0 12px;
+  border: 1px solid var(--satona-border);
+  border-radius: 11px;
+  outline: 0;
+  background: rgba(255,255,255,.05);
+  color: white;
+}
+
+.search-results {
+  max-height: 390px;
+  padding: 0 10px 10px;
+  overflow: auto;
+}
+
+.search-results button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 10px;
+  border-radius: 10px;
+  background: transparent;
+  color: #d9d6e8;
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+}
+
+.search-results button:hover {
+  background: rgba(139,92,246,.11);
+  color: white;
+}
+
+.empty-state {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--satona-muted);
+  text-align: center;
+}
+
+.empty-state h2 {
+  margin: 15px 0 5px;
+  color: white;
+  font-size: 18px;
+}
+
+.empty-state p {
+  max-width: 400px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+@media (max-width: 850px) {
+  .desktop-widget {
+    display: none;
+  }
+
+  .taskbar-search {
+    width: 45px;
+    justify-content: center;
+  }
+
+  .taskbar-search span {
+    display: none;
+  }
+
+  .taskbar-pinned {
+    overflow: hidden;
+  }
+
+  .speed-grid {
+    grid-template-columns: repeat(2,1fr);
+  }
+
+  .wallpaper-picker {
+    grid-template-columns: repeat(2,1fr);
+  }
+
+  .settings-sidebar {
+    width: 58px;
+  }
+
+  .settings-brand span,
+  .settings-nav span {
+    display: none;
+  }
+}
