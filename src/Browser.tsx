@@ -1,5 +1,3 @@
-import * as scramjetUtils from "@mercuryworkshop/scramjet-utils";
-
 import {
   useEffect,
   useRef,
@@ -47,14 +45,6 @@ function getSiteName(url: string) {
     return "New Tab";
   }
 }
-
-const SEARCH_ENGINES = {
-  google: "https://www.google.com/search?q=",
-  duckduckgo: "https://duckduckgo.com/?q=",
-  bing: "https://www.bing.com/search?q=",
-  yahoo: "https://search.yahoo.com/search?p=",
-  brave: "https://search.brave.com/search?q=",
-};
 
 export default function Browser() {
   const [section, setSection] =
@@ -174,11 +164,6 @@ export default function Browser() {
     value = address,
     tabId = activeTab
   ) {
-    const engine =
-      SEARCH_ENGINES[
-        searchEngine as keyof typeof SEARCH_ENGINES
-      ] || SEARCH_ENGINES.google;
-
     const target = createTarget(
       value,
       searchEngine

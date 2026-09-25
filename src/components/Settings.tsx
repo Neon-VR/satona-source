@@ -1,4 +1,4 @@
-import { ChangeEvent } from "react";
+import { type ChangeEvent } from "react";
 import { UploadIcon } from "./Icons";
 import type { SearchEngine } from "../lib/search";
 

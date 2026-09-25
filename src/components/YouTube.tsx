@@ -343,7 +343,7 @@ export default function YouTube() {
           {
             width: "100%",
             height: "100%",
-            videoId: playing,
+            videoId: playing ?? undefined,
             playerVars: {
               autoplay: 1,
               playsinline: 1,

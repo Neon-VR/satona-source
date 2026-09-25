@@ -19,29 +19,10 @@ type YouTubePlayer = {
   destroy: () => void;
   playVideo?: () => void;
   pauseVideo?: () => void;
+  stopVideo?: () => void;
+  setVolume?: (volume: number) => void;
+  getVolume?: () => number;
 };
-
-declare global {
-  interface Window {
-    YT?: {
-      Player: new (
-        element: HTMLElement,
-        options: {
-          width?: string | number;
-          height?: string | number;
-          videoId?: string;
-          playerVars?: Record<string, unknown>;
-          events?: {
-            onReady?: () => void;
-            onError?: (event: unknown) => void;
-          };
-        }
-      ) => YouTubePlayer;
-    };
-
-    onYouTubeIframeAPIReady?: () => void;
-  }
-}
 
 let playerApiPromise: Promise<void> | null = null;
 
@@ -287,7 +268,7 @@ export default function YouTube() {
           {
             width: "100%",
             height: "100%",
-            videoId: playing,
+            videoId: playing ?? undefined,
             playerVars: {
               autoplay: 1,
               playsinline: 1,
