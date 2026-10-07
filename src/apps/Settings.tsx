@@ -9,11 +9,11 @@ export default function Settings() {
   const [identity, setIdentity] = useState(() =>
     readPreference("satona.identity", {
       title: "Satona",
-      icon: "/satona-logo.png",
+      icon: "/satona-emblem.png",
     }),
   );
   const [accent, setAccent] = useState(() =>
-    readPreference("satona.accent", "#a4f6c1"),
+    readPreference("satona.galaxy-accent", "#c4a1ff"),
   );
   const [motion, setMotion] = useState(() =>
     readPreference("satona.motion", true),
@@ -137,7 +137,7 @@ export default function Settings() {
           <h2>Find your color</h2>
           <p>Choose an accent for the whole workspace.</p>
           <div className="accent-options">
-            {["#a4f6c1", "#b7b0ff", "#a5d9ff", "#ffc79a", "#f6aed1"].map(
+            {["#c4a1ff", "#b7b0ff", "#a5d9ff", "#ffc79a", "#f6aed1"].map(
               (color, index) => (
                 <button
                   key={color}
@@ -148,7 +148,7 @@ export default function Settings() {
                   style={{ background: color }}
                   onClick={() => {
                     setAccent(color);
-                    savePreference("satona.accent", color);
+                    savePreference("satona.galaxy-accent", color);
                   }}
                 />
               ),

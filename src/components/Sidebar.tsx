@@ -37,8 +37,10 @@ export default function Sidebar({ section, onSection }: Props) {
         onClick={() => onSection("home")}
         title="Satona"
       >
-        <img src="/satona-logo.png" alt="Satona" />
-        <span>satona<small>MAKE IT YOURS</small></span>
+        <picture>
+          <source media="(max-width: 800px)" srcSet="/satona-emblem.png" />
+          <img src="/satona-wordmark.png" alt="Satona" />
+        </picture>
       </button>
 
       <div className="satona-sidebar-main">

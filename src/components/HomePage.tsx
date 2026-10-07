@@ -70,7 +70,7 @@ export default function HomePage({
           <i />
           <i />
           <i />
-          <span>✳</span>
+          <img src="/satona-emblem.png" alt="" />
         </div>
         <span className="section-kicker">WELCOME TO SATONA</span>
         <h1>

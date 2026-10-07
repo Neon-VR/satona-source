@@ -1,10 +1,12 @@
 import Icon from "./Icon";
+import AnimatedGalaxyBackground from "./AnimatedGalaxyBackground";
 
 export default function LaunchScreen({ onLaunch }: { onLaunch: () => void }) {
   return (
     <main className="launch-screen">
+      <AnimatedGalaxyBackground />
       <div className="launch-brand">
-        <img src="/satona-logo.png" alt="" /> satona
+        <img src="/satona-wordmark.png" alt="Satona" />
         <span>YOUR SPACE ON THE WEB</span>
       </div>
       <div className="launch-heading">

@@ -14,7 +14,7 @@ export const tabPresets = [
     id: "satona",
     title: "Satona",
     domain: "",
-    icon: "/satona-logo.png",
+    icon: "/satona-emblem.png",
     label: "Satona",
   },
   {
@@ -50,7 +50,7 @@ export const presetIcon = (preset: (typeof tabPresets)[number]) =>
 export function applyPreferences() {
   const identity = readPreference("satona.identity", {
     title: "Satona",
-    icon: "/satona-logo.png",
+    icon: "/satona-emblem.png",
   });
   document.title = identity.title || "Satona";
   let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
@@ -60,10 +60,10 @@ export function applyPreferences() {
     document.head.append(favicon);
   }
   favicon.removeAttribute("type");
-  favicon.href = identity.icon || "/satona-logo.png";
+  favicon.href = identity.icon || "/satona-emblem.png";
   document.documentElement.style.setProperty(
     "--accent",
-    readPreference("satona.accent", "#a4f6c1"),
+    readPreference("satona.galaxy-accent", "#c4a1ff"),
   );
   document.documentElement.dataset.motion = readPreference(
     "satona.motion",

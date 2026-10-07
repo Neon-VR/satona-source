@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Frame } from "@mercuryworkshop/scramjet-controller";
 import Sidebar, { type Section } from "./components/Sidebar";
+import AnimatedGalaxyBackground from "./components/AnimatedGalaxyBackground";
 import BrowserChrome from "./components/BrowserChrome";
 import HomePage from "./components/HomePage";
 import ProxyTab from "./components/ProxyTab";
@@ -137,6 +138,7 @@ export default function Browser() {
   };
   return (
     <div className="satona-app">
+      <AnimatedGalaxyBackground />
       <Sidebar
         section={section}
         onSection={(next) => {
