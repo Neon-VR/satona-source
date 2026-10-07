@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import Icon from "../components/Icon";
 import { youtubeVideoId } from "../lib/video";
 import { readPreference, savePreference } from "../lib/preferences";
+import ProxyTab from "../components/ProxyTab";
+import { ensureController } from "../proxy/scramjet";
 type Video = { id: string; title: string; channel: string; thumbnail: string };
 type ApiItem = {
   id: string | { videoId?: string };
@@ -35,6 +37,8 @@ export default function YouTube() {
   async function search(value: string) {
     const id = youtubeVideoId(value);
     if (id) {
+      abort.current?.abort();
+      setLoading(false);
       play({
         id,
         title: "YouTube video",
@@ -68,10 +72,20 @@ export default function YouTube() {
         params.set("chart", "mostPopular");
         params.set("regionCode", "US");
       }
-      const response = await fetch(
-        `https://www.googleapis.com/youtube/v3/${value.trim() ? "search" : "videos"}?${params}`,
-        { signal: controller.signal },
+      const proxy = await ensureController();
+      const result = await proxy.transport.request(
+        new URL(
+          `https://www.googleapis.com/youtube/v3/${value.trim() ? "search" : "videos"}?${params}`,
+        ),
+        "GET",
+        null,
+        [["Accept", "application/json"]],
+        controller.signal,
       );
+      const response = new Response(result.body, {
+        status: result.status,
+        headers: result.headers,
+      });
       if (!response.ok)
         throw new Error(
           `Video search is unavailable (${response.status}). You can still paste a video link.`,
@@ -134,7 +148,7 @@ export default function YouTube() {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-        <button disabled={loading}>
+        <button disabled={loading && !youtubeVideoId(query)}>
           {loading ? "Searching…" : "Let’s watch ↗"}
         </button>
       </form>
@@ -154,18 +168,17 @@ export default function YouTube() {
               Close player ×
             </button>
           </div>
-          <iframe
-            key={playing.id}
-            className="video-player-inline"
-            title={playing.title}
-            src={`https://www.youtube-nocookie.com/embed/${playing.id}?autoplay=1&rel=0&playsinline=1`}
-            referrerPolicy="strict-origin-when-cross-origin"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-            allowFullScreen
-          />
+          <div className="video-player-inline video-proxied-player">
+            <ProxyTab
+              key={playing.id}
+              url={`https://www.youtube.com/embed/${playing.id}?autoplay=1&rel=0&playsinline=1&origin=${encodeURIComponent(location.origin)}&widget_referrer=${encodeURIComponent(location.origin + "/")}`}
+              revision={0}
+              onFrame={() => {}}
+            />
+          </div>
           <p className="subtle-note">
-            Privacy-enhanced YouTube player. Some videos have age, region, or
-            embedding restrictions.{" "}
+            Playback runs through Satona's relay. Some videos have age, region,
+            or playback restrictions.{" "}
             <a
               href={`https://www.youtube.com/watch?v=${playing.id}`}
               target="_blank"

@@ -17,6 +17,7 @@ function setup({
   let initializations = 0;
   let httpAttempts = 0;
   let libcurlAttempts = 0;
+  const httpRequests = [];
   class Epoxy {
     constructor({ wisp }) {
       this.wisp = wisp;
@@ -56,10 +57,14 @@ function setup({
     MockLibcurl: Libcurl,
     URL,
     AbortSignal,
+    Response,
+    Uint8Array,
+    btoa,
     setTimeout,
-    fetch: async (url) => {
+    fetch: async (url, options) => {
       if (url === httpRelay) {
         httpAttempts++;
+        httpRequests.push(JSON.parse(options.body));
         return new Response("fallback page", {
           headers: {
             "X-Satona-Metadata": encodeURIComponent(
@@ -82,6 +87,7 @@ function setup({
     counts: () => ({ attempts, initializations }),
     httpAttempts: () => httpAttempts,
     libcurlAttempts: () => libcurlAttempts,
+    httpRequests,
   };
 }
 
@@ -90,6 +96,37 @@ test("disconnected GET rebuilds the client and retries once", async () => {
   await state.transport.init();
   assert.equal((await state.transport.request(...state.args)).status, 200);
   assert.deepEqual(state.counts(), { attempts: 2, initializations: 2 });
+});
+
+test("YouTube media reads use HTTPS once and preserve binary request bodies", async () => {
+  const state = setup({ httpRelay: "https://relay.example/fetch" });
+  const body = new Uint8Array([0, 255, 24, 128]);
+  await state.transport.request(
+    new URL("https://rr1.googlevideo.com/videoplayback"),
+    "POST",
+    body,
+    [],
+    undefined,
+  );
+  assert.equal(state.counts().attempts, 0);
+  assert.equal(state.httpAttempts(), 1);
+  assert.deepEqual(
+    [...Buffer.from(state.httpRequests[0].bodyBase64, "base64")],
+    [...body],
+  );
+});
+
+test("YouTube account mutations and lookalike hosts do not use the media relay", async () => {
+  for (const url of [
+    "https://www.youtube.com/youtubei/v1/like/like",
+    "https://youtube.com.attacker.example/youtubei/v1/player",
+  ]) {
+    const state = setup({ httpRelay: "https://relay.example/fetch" });
+    await assert.rejects(
+      state.transport.request(new URL(url), "POST", "{}", [], undefined),
+    );
+    assert.equal(state.httpAttempts(), 0);
+  }
 });
 test("submissions are never replayed", async () => {
   const state = setup({ method: "POST" });

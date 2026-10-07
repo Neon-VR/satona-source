@@ -21,9 +21,21 @@ const newTabData = (): Tab => ({
   url: "",
   revision: 0,
 });
-export default function Browser() {
+export default function Browser({
+  embedded = false,
+  initialUrl = "",
+}: {
+  embedded?: boolean;
+  initialUrl?: string;
+}) {
   const [section, setSection] = useState<Section>("home");
-  const [tabs, setTabs] = useState<Tab[]>(() => [newTabData()]);
+  const [tabs, setTabs] = useState<Tab[]>(() => [
+    {
+      ...newTabData(),
+      url: initialUrl,
+      title: initialUrl ? "Web app" : "New Tab",
+    },
+  ]);
   const [activeTab, setActiveTab] = useState(tabs[0].id);
   const [address, setAddress] = useState("");
   const [bookmarks, setBookmarks] = useState(() =>
@@ -42,16 +54,17 @@ export default function Browser() {
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "l") {
-        event.preventDefault();
         const input =
-          document.querySelector<HTMLInputElement>(".address-bar input");
+          document.querySelector<HTMLInputElement>(embedded ? ".os-focused .address-bar input" : ".address-bar input");
+        if (!input) return;
+        event.preventDefault();
         input?.focus();
         input?.select();
       }
     };
     window.addEventListener("keydown", shortcut);
     return () => window.removeEventListener("keydown", shortcut);
-  }, []);
+  }, [embedded]);
   function navigate(value: string) {
     const url = createTarget(
       value,
@@ -101,6 +114,51 @@ export default function Browser() {
     savePreference("satona.bookmarks", next);
   }
   const sectionPage = () => {
+    if (embedded && section === "home")
+      return (
+        <section className="os-browser-newtab">
+          <span className="os-eyebrow">A LITTLE CURIOSITY GOES A LONG WAY</span>
+          <h1>
+            Where to next<span>?</span>
+          </h1>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              navigate(address);
+            }}
+          >
+            <input
+              aria-label="Search the web"
+              placeholder="Search the web or enter a URL"
+              value={address}
+              onChange={(event) => setAddress(event.target.value)}
+            />
+            <button aria-label="Search the web">↗</button>
+          </form>
+          <div className="os-browser-shortcuts">
+            {[
+              ["Wikipedia", "https://en.wikipedia.org/"],
+              ["YouTube", "https://www.youtube.com/"],
+              ["Reddit", "https://www.reddit.com/"],
+            ].map(([label, url]) => (
+              <button key={url} onClick={() => navigate(url)}>
+                {label} ↗
+              </button>
+            ))}
+          </div>
+          {bookmarks.length > 0 && (
+            <div className="os-browser-bookmarks">
+              <h2>Saved for later</h2>
+              {bookmarks.slice(0, 12).map((url) => (
+                <button key={url} onClick={() => navigate(url)}>
+                  {url.replace(/^https?:\/\//, "")}
+                </button>
+              ))}
+            </div>
+          )}
+          <small>SATONA BROWSER · YOUR WINDOW TO THE WEB</small>
+        </section>
+      );
     if (section === "games") return <Games />;
     if (section === "apps") return <Apps onOpen={navigate} />;
     if (section === "cloud") return <CloudGaming onOpen={navigate} />;
@@ -137,23 +195,25 @@ export default function Browser() {
     );
   };
   return (
-    <div className="satona-app">
-      <AnimatedGalaxyBackground />
-      <Sidebar
-        section={section}
-        onSection={(next) => {
-          if (next === "home") {
-            setTabs((current) =>
-              current.map((tab) =>
-                tab.id === activeTab
-                  ? { ...tab, url: "", title: "New Tab" }
-                  : tab,
-              ),
-            );
-          }
-          setSection(next);
-        }}
-      />
+    <div className={`satona-app ${embedded ? "webos-browser" : ""}`}>
+      {!embedded && <AnimatedGalaxyBackground />}
+      {!embedded && (
+        <Sidebar
+          section={section}
+          onSection={(next) => {
+            if (next === "home") {
+              setTabs((current) =>
+                current.map((tab) =>
+                  tab.id === activeTab
+                    ? { ...tab, url: "", title: "New Tab" }
+                    : tab,
+                ),
+              );
+            }
+            setSection(next);
+          }}
+        />
+      )}
       <div className="satona-browser-shell">
         <BrowserChrome
           tabs={tabs}

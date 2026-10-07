@@ -16,6 +16,12 @@ export default function Icon({ name, size = 20 }: Props) {
   };
 
   switch (name) {
+    case "globe":
+      return <svg {...common}><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 7h14M5 17h14"/></svg>;
+    case "files":
+      return <svg {...common}><path d="M3 7a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v9H3Z"/><path d="M3 10h18"/></svg>;
+    case "lock":
+      return <svg {...common}><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg>;
     case "cloud":
       return <svg {...common}><path d="M7 18h11a4 4 0 0 0 .7-7.9A7 7 0 0 0 5 9a4.5 4.5 0 0 0 2 9Z" /><path d="m10 11-2 3h4l-1 3 5-5h-4l1-3" /></svg>;
     case "apps":

@@ -1,7 +1,11 @@
 import Icon from "./Icon";
 import AnimatedGalaxyBackground from "./AnimatedGalaxyBackground";
 
-export default function LaunchScreen({ onLaunch }: { onLaunch: () => void }) {
+export default function LaunchScreen({
+  onLaunch,
+}: {
+  onLaunch: (mode: "legacy" | "webos") => void;
+}) {
   return (
     <main className="launch-screen">
       <AnimatedGalaxyBackground />
@@ -19,7 +23,10 @@ export default function LaunchScreen({ onLaunch }: { onLaunch: () => void }) {
         <p>Launch Satona with WebOS or legacy UI?</p>
       </div>
       <div className="launch-options">
-        <button className="launch-option ready" onClick={onLaunch}>
+        <button
+          className="launch-option ready"
+          onClick={() => onLaunch("legacy")}
+        >
           <div className="launch-preview">
             <div className="preview-sidebar" />
             <div className="preview-content">
@@ -37,7 +44,10 @@ export default function LaunchScreen({ onLaunch }: { onLaunch: () => void }) {
           </p>
           <strong>Launch Satona →</strong>
         </button>
-        <button className="launch-option future" disabled>
+        <button
+          className="launch-option ready webos-ready"
+          onClick={() => onLaunch("webos")}
+        >
           <div className="webos-preview">
             <Icon name="apps" size={56} />
             <div className="preview-dock">
@@ -47,13 +57,13 @@ export default function LaunchScreen({ onLaunch }: { onLaunch: () => void }) {
               <i />
             </div>
           </div>
-          <span className="launch-option-tag">COMING SOON</span>
+          <span className="launch-option-tag">YOUR NEW DESKTOP</span>
           <h2>WebOS</h2>
           <p>
             A desktop-inspired experience with windows, a taskbar, and room for
             everything.
           </p>
-          <strong>In the making</strong>
+          <strong>Launch WebOS →</strong>
         </button>
       </div>
       <p className="launch-foot">One space. Endless possibilities.</p>

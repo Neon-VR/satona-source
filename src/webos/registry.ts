@@ -1,0 +1,126 @@
+export type DesktopApp = {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  description: string;
+  category: string;
+  builtin?: boolean;
+  url?: string;
+};
+export const desktopApps: DesktopApp[] = [
+  {
+    id: "browser",
+    name: "Satona Browser",
+    icon: "globe",
+    color: "#ab7eff",
+    description: "Your whole internet, with tabs and saved links.",
+    category: "Essentials",
+    builtin: true,
+  },
+  {
+    id: "games",
+    name: "Arcade",
+    icon: "games",
+    color: "#8be8ba",
+    description: "Discover games from GN-Math and LuminSDK.",
+    category: "Play",
+    builtin: true,
+  },
+  {
+    id: "files",
+    name: "Files",
+    icon: "files",
+    color: "#ffce83",
+    description: "A little home for your notes and text files.",
+    category: "Essentials",
+    builtin: true,
+  },
+  {
+    id: "youtube",
+    name: "YouTube",
+    icon: "youtube",
+    color: "#ff859f",
+    description: "Search and watch through Satona Browser.",
+    category: "Play",
+    builtin: true,
+  },
+  {
+    id: "chat",
+    name: "Chat",
+    icon: "chat",
+    color: "#96beff",
+    description: "Drop into the Satona community lounge.",
+    category: "Connect",
+    builtin: true,
+  },
+  {
+    id: "settings",
+    name: "Settings",
+    icon: "settings",
+    color: "#bdc6e5",
+    description: "Make your desktop and browser feel like you.",
+    category: "Essentials",
+    builtin: true,
+  },
+  {
+    id: "store",
+    name: "App Store",
+    icon: "apps",
+    color: "#cf9dff",
+    description: "Find a new favorite for your desktop.",
+    category: "Essentials",
+    builtin: true,
+  },
+  {
+    id: "notes",
+    name: "Notes",
+    icon: "files",
+    color: "#ffd898",
+    description: "An automatically saved space for your ideas.",
+    category: "Create",
+  },
+  {
+    id: "calculator",
+    name: "Calculator",
+    icon: "apps",
+    color: "#99e7d8",
+    description: "Quick arithmetic, without leaving your desktop.",
+    category: "Essentials",
+  },
+  {
+    id: "cloud",
+    name: "Cloud Gaming",
+    icon: "cloud",
+    color: "#bfa3ff",
+    description: "Launch GeForce NOW and more through Satona.",
+    category: "Play",
+  },
+  {
+    id: "wikipedia",
+    name: "Wikipedia",
+    icon: "globe",
+    color: "#ced8e8",
+    description: "Follow your curiosity. The free encyclopedia.",
+    category: "Explore",
+    url: "https://en.wikipedia.org/",
+  },
+  {
+    id: "github",
+    name: "GitHub",
+    icon: "globe",
+    color: "#c2b6ee",
+    description: "Explore projects, code, and your next idea.",
+    category: "Create",
+    url: "https://github.com/",
+  },
+  {
+    id: "spotify",
+    name: "Spotify",
+    icon: "music",
+    color: "#89eaa7",
+    description: "Bring your soundtrack. A Spotify web shortcut.",
+    category: "Play",
+    url: "https://open.spotify.com/",
+  },
+];

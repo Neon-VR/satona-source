@@ -15,6 +15,58 @@ const request = (input = {}, from = origin) =>
     }),
   });
 
+test("embedded player receives the actual embedding app identity", async () => {
+  await relayHttp(
+    request({ url: "https://www.youtube.com/embed/aqz-KE-bpKQ" }),
+    env,
+    async (_url, options) => {
+      assert.equal(options.headers.get("Referer"), `${origin}/`);
+      return new Response("player");
+    },
+  );
+});
+
+test("video read POSTs preserve bytes and stream upstream media", async () => {
+  const result = await relayHttp(
+    request({
+      url: "https://rr1.googlevideo.com/videoplayback",
+      method: "POST",
+      bodyBase64: "AP8YgA==",
+    }),
+    env,
+    async (url, options) => {
+      assert.equal(options.method, "POST");
+      assert.deepEqual([...options.body], [0, 255, 24, 128]);
+      return new Response(new Uint8Array([1, 2, 3]), {
+        headers: { "content-type": "video/mp4" },
+      });
+    },
+  );
+  assert.deepEqual([...new Uint8Array(await result.arrayBuffer())], [1, 2, 3]);
+});
+
+test("relay rejects video lookalikes, account mutations, and bodies on GET", async () => {
+  for (const url of [
+    "https://googlevideo.com.attacker.example/videoplayback",
+    "https://www.youtube.com/youtubei/v1/like/like",
+    "http://rr1.googlevideo.com/videoplayback",
+  ]) {
+    assert.equal(
+      (
+        await relayHttp(
+          request({ url, method: "POST", bodyBase64: "e30=" }),
+          env,
+        )
+      ).status,
+      405,
+    );
+  }
+  assert.equal(
+    (await relayHttp(request({ bodyBase64: "e30=" }), env)).status,
+    400,
+  );
+});
+
 test("HTTP fallback preserves redirects and separate cookies without following the redirect", async () => {
   const result = await relayHttp(
     request({

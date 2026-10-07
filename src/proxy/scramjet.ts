@@ -83,6 +83,10 @@ export async function ensureController() {
     const nextController = new Controller({
       serviceworker: serviceWorker,
       transport,
+      config: {
+        scramjetPath: "/scramjet/scramjet.js?v=webos1",
+        injectPath: "/controller/controller.inject.js?v=webos1",
+      },
       scramjetConfig: defaultConfig,
     });
 

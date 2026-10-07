@@ -31,7 +31,7 @@ export async function relayHttp(request, env, fetchUpstream = fetch) {
       const { value, done } = await reader.read();
       if (done) break;
       size += value.length;
-      if (size > 65536) {
+      if (size > 1500000) {
         await reader.cancel();
         return fail("Request too large", 413);
       }
@@ -51,8 +51,28 @@ export async function relayHttp(request, env, fetchUpstream = fetch) {
     ) {
       return fail("Destination not allowed", 400);
     }
-    if (!["GET", "HEAD"].includes(input.method))
+    const videoReadPost =
+      input.method === "POST" &&
+      target.protocol === "https:" &&
+      ((/\.googlevideo\.com$/.test(target.hostname) &&
+        target.pathname === "/videoplayback") ||
+        (/^(www\.|m\.)?youtube\.com$/.test(target.hostname) &&
+          /^\/youtubei\/v1\/(player|next|browse|search|updated_metadata|guide|att\/get)$/.test(
+            target.pathname,
+          )));
+    if (!["GET", "HEAD"].includes(input.method) && !videoReadPost)
       return fail("Only GET and HEAD can be retried", 405);
+    let body;
+    if (input.bodyBase64 !== undefined) {
+      if (!videoReadPost || typeof input.bodyBase64 !== "string")
+        return fail("Body not allowed", 400);
+      try {
+        body = Uint8Array.from(atob(input.bodyBase64), (c) => c.charCodeAt(0));
+      } catch {
+        return fail("Invalid body", 400);
+      }
+      if (body.length > 1048576) return fail("Request too large", 413);
+    }
     if (
       !Array.isArray(input.headers) ||
       input.headers.some(
@@ -76,8 +96,17 @@ export async function relayHttp(request, env, fetchUpstream = fetch) {
     ])
       headers.delete(key);
     headers.set("Accept-Encoding", "identity");
+    // Identify the actual embedding app, as required by the YouTube player.
+    // Scramjet's first navigation has no virtual referring page to forward.
+    if (
+      /^(www\.)?youtube\.com$/.test(target.hostname) &&
+      target.pathname.startsWith("/embed/") &&
+      !headers.has("Referer")
+    )
+      headers.set("Referer", `${origin}/`);
     const upstream = await fetchUpstream(target, {
       method: input.method,
+      body,
       headers,
       redirect: "manual",
       signal: request.signal,

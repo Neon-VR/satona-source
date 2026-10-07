@@ -93,7 +93,8 @@ export default function ProxyTab({
         ref={iframe}
         className="browser-frame"
         title="Satona Browser"
-        allow="fullscreen; autoplay; gamepad; pointer-lock; clipboard-read; clipboard-write"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads allow-pointer-lock allow-presentation"
+        allow="fullscreen; autoplay; encrypted-media; picture-in-picture; gamepad; clipboard-read; clipboard-write"
         onLoad={() => {
           if (iframe.current?.getAttribute("src")) {
             setLoading(false);

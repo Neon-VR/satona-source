@@ -1,8 +1,10 @@
 # Satona
 
 Satona is a React/Vite browser workspace. The Study Guides entrance is unchanged.
-After signing in, choose Legacy UI to launch the redesigned workspace. WebOS is
-marked Coming soon and is disabled.
+After signing in, choose Legacy UI or WebOS. WebOS has a galaxy desktop, movable
+and resizable windows, minimize/maximize/restore, a Start menu, a taskbar, and an
+app store. Installed apps and virtual files are saved on the current device.
+The screen lock is decorative and does not protect access with a password.
 
 ## Development
 
@@ -19,9 +21,10 @@ A local Node relay can use `ws://127.0.0.1:4000/`.
 - Mint, lavender, sky, peach, and rose accents; reduced motion; a local scratchpad.
 - LuminSDK and GN-Math catalogs, an All selector, search, favorites, random games, and fullscreen.
 - GeForce NOW, RaccoonGame, and nowgg.fun launch through Scramjet from Cloud gaming.
-- The watch room uses YouTube Data API metadata and youtube-nocookie.com playback.
-  `VITE_YOUTUBE_API_KEY` enables discovery/search. Pasted video URLs and IDs work
-  without a Data API key. Playback still depends on YouTube access and video restrictions.
+- YouTube uses Data API metadata for discovery (`VITE_YOUTUBE_API_KEY`) and a
+  lightweight player through Scramjet, without a direct youtube-nocookie iframe.
+  Pasted video links do not require a Data API key. Playback remains dependent on
+  the selected Wisp relay and YouTube compatibility.
 - Chat filters targeted slurs in outgoing names/messages and incoming displayed content,
   while permitting ordinary profanity. See `CHAT_SETUP.md` and `CHAT_SETUP.sql`.
   Apply `CHAT_MODERATION.sql` in Supabase to enforce the filter at the database too;
@@ -44,6 +47,10 @@ once. Persistent TLS-connect failures on the bundled Worker use its streaming
 HTTP fallback, enabling page reads from Cloudflare-hosted sites such as better16.xyz.
 It never automatically replays submissions; WebSockets and form submissions still
 require a reachable raw TCP destination or a compatible custom Wisp relay.
+YouTube assets use the built-in Worker's native HTTPS route immediately to avoid
+TCP socket exhaustion. Its allowlisted player/search reads and Googlevideo SABR
+POSTs preserve their binary bodies (up to 1 MiB) and are sent once, never retried.
+Account mutations are excluded. Proxy frames cannot navigate the top-level app.
 The checked-in `public/scramjet/scramjet.js` contains a history API compatibility
 fix: a null/omitted pushState/replaceState URL must remain absent rather than be
 rewritten to a `/null` destination (which can cause TikTok 404s). Preserve this
@@ -51,16 +58,11 @@ patch when updating vendored Scramjet assets, or upgrade to an upstream fix.
 
 ### Threaded games
 
-The HTTPS host must return `Cross-Origin-Opener-Policy: same-origin` and
-`Cross-Origin-Embedder-Policy: credentialless` on the top-level Satona document.
-The SATONA-STUDY Bunny zone applies these through the **Enable threaded games**
-edge rule for all request URLs. Vite development and preview use the same headers.
-Scramjet detects the isolated parent and supplies the required isolation headers
-on proxied documents and worker scripts, enabling SharedArrayBuffer and WASM
-threads. Adding these headers only to Wisp responses cannot isolate the parent.
-After changing the CDN rule, purge its cache and fully reload Satona before
-opening a new game frame. External games embedded directly must also support
-COEP; games opened through Scramjet receive its rewritten response headers.
+Global COOP/COEP headers were rolled back because they blocked embedded pages.
+The Bunny **Disabled threaded games** rule matches no requests (`NONE` of URL `*`).
+Vite also leaves these headers unset. Do not re-enable global isolation without
+testing every embedding flow. Games requiring SharedArrayBuffer are unsupported
+in this mode. `thread-check.html` is an optional diagnostic, not an app feature.
 
 ## Checks
 
@@ -79,7 +81,7 @@ integration. Verify the deployed site at `https://satona-study.b-cdn.net/` after
 its build finishes. A source push alone is not proof that the CDN has updated.
 
 Bunny storage uses the `satona-site/dist` directory. The storage zone's custom
-404 document is currently `/dist/index-1bf6c01.html`, a versioned copy of the
+404 document is currently `/dist/index-webos-20261007.html`, a versioned copy of the
 production index. When deploying the next release, upload its hashed assets
 first, then a new versioned HTML entry, update that custom document path, and
 purge SATONA-STUDY. Verify the bundle URL on the public root; replacing

@@ -4,13 +4,14 @@ import StudyGuidesGate, {
 } from "./components/StudyGuidesGate";
 import { useEffect, useState } from "react";
 import LaunchScreen from "./components/LaunchScreen";
+import WebOS from "./webos/WebOS";
 import { applyPreferences } from "./lib/preferences";
 import "./index.css";
 import "./redesign.css";
 
 export default function App() {
   const unlocked = hasStudyGuidesAccess();
-  const [launched, setLaunched] = useState(false);
+  const [launched, setLaunched] = useState<"legacy" | "webos" | null>(null);
 
   useEffect(() => {
     if (unlocked) {
@@ -28,9 +29,13 @@ export default function App() {
 
   return unlocked ? (
     launched ? (
-      <Browser />
+      launched === "webos" ? (
+        <WebOS onExit={() => setLaunched(null)} />
+      ) : (
+        <Browser />
+      )
     ) : (
-      <LaunchScreen onLaunch={() => setLaunched(true)} />
+      <LaunchScreen onLaunch={setLaunched} />
     )
   ) : (
     <StudyGuidesGate />

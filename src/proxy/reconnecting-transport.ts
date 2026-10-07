@@ -38,7 +38,16 @@ export class ReconnectingTransport extends Epoxy {
   private async requestHttp(
     ...args: Parameters<Epoxy["request"]>
   ): ReturnType<Epoxy["request"]> {
-    const [remote, method, , headers, signal] = args;
+    const [remote, method, body, headers, signal] = args;
+    let bodyBase64: string | undefined;
+    if (body != null) {
+      const bytes = new Uint8Array(await new Response(body).arrayBuffer());
+      if (bytes.length > 1048576) throw new Error("Video request is too large");
+      let binary = "";
+      for (let offset = 0; offset < bytes.length; offset += 8192)
+        binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
+      bodyBase64 = btoa(binary);
+    }
     const response = await fetch(this.httpRelay!, {
       method: "POST",
       credentials: "omit",
@@ -49,6 +58,7 @@ export class ReconnectingTransport extends Epoxy {
         url: remote.href,
         method: method.toUpperCase(),
         headers,
+        bodyBase64,
       }),
     });
     if (!response.ok)
@@ -80,9 +90,8 @@ export class ReconnectingTransport extends Epoxy {
       });
     }
     if (this.engine === "libcurl") {
-      const { default: Libcurl } = await import(
-        "@mercuryworkshop/libcurl-transport"
-      );
+      const { default: Libcurl } =
+        await import("@mercuryworkshop/libcurl-transport");
       this.alternate ||= new Libcurl({ wisp: this.wisp });
       await this.alternate.init();
       this.ready = this.alternate.ready;
@@ -96,6 +105,33 @@ export class ReconnectingTransport extends Epoxy {
     ...args: Parameters<Epoxy["request"]>
   ): ReturnType<Epoxy["request"]> {
     const [remote, method, body, , signal] = args;
+    // YouTube's SABR player sends binary POSTs to retrieve video segments.
+    // Send these reads once through native HTTPS, before touching raw TCP;
+    // the Worker's six-socket limit otherwise causes a cascade of TLS failures.
+    const youtubeHost =
+      /(^|\.)(youtube\.com|youtube-nocookie\.com|googlevideo\.com|ytimg\.com)$/.test(
+        remote.hostname,
+      ) ||
+      (remote.hostname === "www.googleapis.com" &&
+        remote.pathname.startsWith("/youtube/v3/"));
+    const videoReadPost =
+      method.toUpperCase() === "POST" &&
+      ((/\.googlevideo\.com$/.test(remote.hostname) &&
+        remote.pathname === "/videoplayback") ||
+        (/^(www\.|m\.)?youtube\.com$/.test(remote.hostname) &&
+          /^\/youtubei\/v1\/(player|next|browse|search|updated_metadata|guide|att\/get)$/.test(
+            remote.pathname,
+          )));
+    if (
+      this.httpRelay &&
+      remote.protocol === "https:" &&
+      youtubeHost &&
+      ((["GET", "HEAD"].includes(method.toUpperCase()) && body == null) ||
+        videoReadPost)
+    ) {
+      signal?.throwIfAborted();
+      return this.requestHttp(...args);
+    }
     const safeToRetry =
       ["GET", "HEAD"].includes(method.toUpperCase()) &&
       body == null &&
