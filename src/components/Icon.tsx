@@ -16,6 +16,17 @@ export default function Icon({ name, size = 20 }: Props) {
   };
 
   switch (name) {
+    case "cloud":
+      return <svg {...common}><path d="M7 18h11a4 4 0 0 0 .7-7.9A7 7 0 0 0 5 9a4.5 4.5 0 0 0 2 9Z" /><path d="m10 11-2 3h4l-1 3 5-5h-4l1-3" /></svg>;
+    case "apps":
+      return (
+        <svg {...common}>
+          <rect x="3" y="3" width="7" height="7" rx="2" />
+          <rect x="14" y="3" width="7" height="7" rx="2" />
+          <rect x="3" y="14" width="7" height="7" rx="2" />
+          <rect x="14" y="14" width="7" height="7" rx="2" />
+        </svg>
+      );
     case "home":
       return (
         <svg {...common}>

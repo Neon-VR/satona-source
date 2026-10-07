@@ -2,7 +2,10 @@ import Icon from "./Icon";
 
 export type Section =
   | "home"
+  | "apps"
   | "games"
+  | "cloud"
+  | "saved"
   | "movies"
   | "music"
   | "chat"
@@ -16,11 +19,14 @@ type Props = {
 
 const items: { id: Section; label: string; icon: string }[] = [
   { id: "home", label: "Home", icon: "home" },
-  { id: "games", label: "Books", icon: "games" },
+  { id: "apps", label: "Apps", icon: "apps" },
+  { id: "games", label: "Games", icon: "games" },
+  { id: "cloud", label: "Cloud gaming", icon: "cloud" },
   { id: "movies", label: "Movies", icon: "movies" },
   { id: "music", label: "Music", icon: "music" },
   { id: "chat", label: "Chat", icon: "chat" },
   { id: "youtube", label: "YouTube", icon: "youtube" },
+  { id: "saved", label: "Saved links", icon: "bookmark" },
 ];
 
 export default function Sidebar({ section, onSection }: Props) {
@@ -32,9 +38,11 @@ export default function Sidebar({ section, onSection }: Props) {
         title="Satona"
       >
         <img src="/satona-logo.png" alt="Satona" />
+        <span>satona<small>MAKE IT YOURS</small></span>
       </button>
 
       <div className="satona-sidebar-main">
+        <span className="nav-caption">YOUR WORKSPACE</span>
         {items.map((item) => (
           <button
             key={item.id}
@@ -45,6 +53,7 @@ export default function Sidebar({ section, onSection }: Props) {
             title={item.label}
           >
             <Icon name={item.icon} />
+            <span>{item.label}</span>
           </button>
         ))}
       </div>
@@ -57,6 +66,7 @@ export default function Sidebar({ section, onSection }: Props) {
         title="Settings"
       >
         <Icon name="settings" />
+        <span>Settings</span>
       </button>
     </aside>
   );

@@ -1,0 +1,10 @@
+name = "satona-wisp-browser-20261005"
+main = "src/index.js"
+compatibility_date = "2026-10-05"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGINS = "https://satona-study.b-cdn.net,http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174"
+
+[observability]
+enabled = true

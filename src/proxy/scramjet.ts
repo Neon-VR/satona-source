@@ -1,16 +1,11 @@
-import EpoxyClient from "@mercuryworkshop/epoxy-transport";
-import { defaultConfigDev } from "@mercuryworkshop/scramjet";
+import { ReconnectingTransport } from "./reconnecting-transport";
+import { defaultConfig } from "@mercuryworkshop/scramjet";
 import { Controller } from "@mercuryworkshop/scramjet-controller";
 
-const isLocalSite =
-  window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1";
+const localWispUrl = "wss://satona-wisp-browser-20261005.satona.workers.dev/wisp/";
 
 export const WISP_URL =
-  import.meta.env.VITE_WISP_URL?.trim() ||
-  (isLocalSite
-    ? "ws://127.0.0.1:4000/"
-    : "wss://anura.pro/");
+  localStorage.getItem("satona.wisp")?.trim() || import.meta.env.VITE_WISP_URL?.trim() || localWispUrl;
 
 let controller: InstanceType<typeof Controller> | null = null;
 let controllerReady: Promise<InstanceType<typeof Controller>> | null = null;
@@ -47,16 +42,15 @@ async function waitForServiceWorker(
     );
   }
 
-  if (registration.active) {
-    return registration.active;
-  }
-
   throw new Error(
-    "Scramjet service worker did not become ready."
+    "Scramjet service worker did not take control. Reload the browser and try again."
   );
 }
 
 export async function ensureController() {
+  if (!window.isSecureContext || !("serviceWorker" in navigator)) {
+    throw new Error("The browser requires HTTPS or localhost with service worker support.");
+  }
   if (controller) {
     return controller;
   }
@@ -75,20 +69,21 @@ export async function ensureController() {
         }
       );
 
-    await navigator.serviceWorker.ready;
-
     const serviceWorker =
       await waitForServiceWorker(registration);
 
-    const transport = new EpoxyClient({ wisp: WISP_URL });
+    const transport = new ReconnectingTransport({ wisp: WISP_URL });
 
     const nextController = new Controller({
       serviceworker: serviceWorker,
       transport,
-      scramjetConfig: defaultConfigDev,
+      scramjetConfig: defaultConfig,
     });
 
-    await nextController.wait();
+    await Promise.race([
+      nextController.wait(),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("The browser relay did not initialize. Check your Wisp endpoint in Settings.")), 20000)),
+    ]);
 
     controller = nextController;
 
@@ -142,7 +137,7 @@ export function createTarget(
   }
 
   if (
-    /^[a-z0-9.-]+\.[a-z]{2,}(\/.*)?$/i.test(input)
+    /^[a-z0-9.-]+\.[a-z]{2,}(:\d+)?([/?#].*)?$/i.test(input)
   ) {
     return `https://${input}`;
   }

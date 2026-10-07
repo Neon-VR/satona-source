@@ -1,16 +1,10 @@
 import Icon from "./Icon";
-
-type Tab = {
-  id: string;
-  title: string;
-  url: string;
-};
-
 type Props = {
-  tabs: Tab[];
+  tabs: { id: string; title: string; url: string }[];
   activeTab: string;
   address: string;
   onTab: (id: string) => void;
+  onClose: (id: string) => void;
   onNewTab: () => void;
   onAddress: (value: string) => void;
   onNavigate: () => void;
@@ -19,118 +13,83 @@ type Props = {
   onReload: () => void;
   onHome: () => void;
   onFullscreen: () => void;
+  onBookmark: () => void;
+  bookmarked: boolean;
 };
-
-export default function BrowserChrome({
-  tabs,
-  activeTab,
-  address,
-  onTab,
-  onNewTab,
-  onAddress,
-  onNavigate,
-  onBack,
-  onForward,
-  onReload,
-  onHome,
-  onFullscreen,
-}: Props) {
+export default function BrowserChrome(props: Props) {
   return (
     <header className="browser-chrome">
       <div className="browser-tabs">
-        <button
-          className="chrome-home-tab"
-          onClick={onHome}
-          title="New Tab"
-        >
-          <span className="chrome-tab-logo">
-            <img src="/satona-logo.png" alt="" />
-          </span>
-          <span>Satona</span>
-        </button>
-
-        {tabs.map((tab) => (
-          <button
+        {props.tabs.map((tab) => (
+          <div
             key={tab.id}
-            className={`chrome-tab ${
-              activeTab === tab.id ? "active" : ""
-            }`}
-            onClick={() => onTab(tab.id)}
+            className={`chrome-tab ${props.activeTab === tab.id ? "active" : ""}`}
           >
-            <span className="chrome-tab-title">
-              {tab.title || "New Tab"}
-            </span>
-          </button>
+            <button
+              style={{ background: "none", color: "inherit", padding: 0 }}
+              onClick={() => props.onTab(tab.id)}
+            >
+              <span className="chrome-tab-title">{tab.title || "New Tab"}</span>
+            </button>
+            <button
+              className="close-tab"
+              aria-label={`Close ${tab.title}`}
+              onClick={() => props.onClose(tab.id)}
+            >
+              <Icon name="x" size={12} />
+            </button>
+          </div>
         ))}
-
         <button
           className="chrome-add-tab"
-          onClick={onNewTab}
+          onClick={props.onNewTab}
           title="New tab"
         >
-          <Icon name="plus" size={17} />
+          <Icon name="plus" size={16} />
         </button>
       </div>
-
       <div className="browser-nav">
         <div className="browser-nav-buttons">
-          <button onClick={onBack} title="Back">
-            <Icon name="back" size={18} />
+          <button onClick={props.onBack} title="Back">
+            <Icon name="back" size={17} />
           </button>
-
-          <button onClick={onForward} title="Forward">
-            <Icon name="forward" size={18} />
+          <button onClick={props.onForward} title="Forward">
+            <Icon name="forward" size={17} />
           </button>
-
-          <button onClick={onReload} title="Reload">
+          <button onClick={props.onReload} title="Reload">
             <Icon name="refresh" size={17} />
           </button>
+          <button onClick={props.onHome} title="Home">
+            <Icon name="home" size={17} />
+          </button>
         </div>
-
         <form
           className="address-bar"
           onSubmit={(event) => {
             event.preventDefault();
-            onNavigate();
+            props.onNavigate();
           }}
         >
-          <Icon name="search" size={16} />
+          <Icon name="search" size={15} />
           <input
-            value={address}
-            onChange={(event) => onAddress(event.target.value)}
+            aria-label="Address bar"
+            value={props.address}
+            onChange={(event) => props.onAddress(event.target.value)}
             placeholder="Search or enter a URL"
           />
         </form>
-
         <div className="browser-tools">
-          <div className="mini-player">
-            <span className="mini-player-title">
-              Nothing playing
-            </span>
-            <button>
-              <Icon name="back" size={13} />
-            </button>
-            <button>
-              <Icon name="play" size={13} />
-            </button>
-            <button>
-              <Icon name="forward" size={13} />
-            </button>
-          </div>
-
-          <button title="Split view">
-            <Icon name="split" size={17} />
-          </button>
-
-          <button title="Bookmark">
+          <button
+            className={props.bookmarked ? "saved" : ""}
+            disabled={
+              !props.tabs.find((tab) => tab.id === props.activeTab)?.url
+            }
+            onClick={props.onBookmark}
+            title={props.bookmarked ? "Remove bookmark" : "Bookmark"}
+          >
             <Icon name="bookmark" size={17} />
           </button>
-
-          <button title="Open in new window">
-            <Icon name="external" size={17} />
-          </button>
-
-          <button onClick={onFullscreen} title="Fullscreen">
+          <button onClick={props.onFullscreen} title="Fullscreen">
             <Icon name="fullscreen" size={17} />
           </button>
         </div>

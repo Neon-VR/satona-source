@@ -47,3 +47,5 @@ public/games/
 *.sw?
 
 .vercel
+cdn-package/
+*.tgz

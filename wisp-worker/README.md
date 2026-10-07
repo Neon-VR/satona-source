@@ -1,0 +1,13 @@
+# Satona free Wisp Worker
+
+The browser's default relay is the Worker `satona-wisp-browser-20261005`, deployed with `wrangler deploy` from this directory. Live endpoint: `wss://satona-wisp-browser-20261005.satona.workers.dev/wisp/`. Older relays remain unchanged.
+
+Supports Wisp v1 TCP streams used by both Epoxy and libcurl transports. Connect to `wss://<deployment-host>/wisp/`. TLS certificate validation stays in the client. `/healthz` reports capabilities.
+
+Free Worker limitations: six simultaneous outbound TCP streams per WebSocket, HTTP/HTTPS ports only, no UDP, and Cloudflare blocks raw TCP connections to Cloudflare IPs and private networks. Cloudflare-hosted websites may not load. Free-plan quotas also apply. This cannot provide the same reachability as a full Wisp server on a VM or Container.
+
+`ALLOWED_ORIGINS` limits browser callers to the deployed Satona site and local development. It is not authentication; non-browser clients can supply their own Origin header.
+
+Run `npm test` for protocol checks. Then `wrangler deploy --dry-run` and `wrangler deploy`. Test the returned endpoint with both transports before configuring `VITE_WISP_URL` and republishing the frontend.
+
+Verification on 2026-10-05: the live `/healthz` returned Wisp v1 TCP capabilities. Epoxy 3.0.1 and libcurl-transport 2.0.5 both received HTTP 200 from `https://www.google.com/`. Both failed the TLS connection to `https://anigato.lol/` through the free Worker. The `transport-check.html` page can repeat these checks through the root Vite dev server at `http://127.0.0.1:5173/wisp-worker/transport-check.html`.

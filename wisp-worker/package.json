@@ -1,0 +1,6 @@
+{
+  "name": "satona-wisp-browser-20261005",
+  "private": true,
+  "type": "module",
+  "scripts": { "deploy": "wrangler deploy", "test": "node --test test/*.test.js" }
+}

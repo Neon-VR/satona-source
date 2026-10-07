@@ -1,416 +1,210 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 import Icon from "../components/Icon";
-
+import { youtubeVideoId } from "../lib/video";
+import { readPreference, savePreference } from "../lib/preferences";
+type Video = { id: string; title: string; channel: string; thumbnail: string };
+type ApiItem = {
+  id: string | { videoId?: string };
+  snippet?: {
+    title?: string;
+    channelTitle?: string;
+    thumbnails?: { medium?: { url: string }; high?: { url: string } };
+  };
+};
 const API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
-
-type Video = {
-  id: string;
-  title: string;
-  channel: string;
-  thumbnail: string;
-  views?: string;
-};
-
-type YouTubePlayer = {
-  destroy: () => void;
-  playVideo?: () => void;
-  pauseVideo?: () => void;
-};
-
-declare global {
-  interface Window {
-    YT?: {
-      Player: new (
-        element: HTMLElement,
-        options: {
-          width?: string | number;
-          height?: string | number;
-          videoId?: string;
-          playerVars?: Record<string, unknown>;
-          events?: {
-            onReady?: () => void;
-            onError?: (event: unknown) => void;
-          };
-        }
-      ) => YouTubePlayer;
-    };
-
-    onYouTubeIframeAPIReady?: () => void;
-  }
-}
-
-let playerApiPromise: Promise<void> | null = null;
-
-function loadPlayerAPI() {
-  if (window.YT?.Player) {
-    return Promise.resolve();
-  }
-
-  if (playerApiPromise) {
-    return playerApiPromise;
-  }
-
-  playerApiPromise = new Promise<void>((resolve, reject) => {
-    const previous = window.onYouTubeIframeAPIReady;
-
-    window.onYouTubeIframeAPIReady = () => {
-      previous?.();
-
-      if (window.YT?.Player) {
-        resolve();
-      } else {
-        reject(new Error("YouTube Player API unavailable."));
-      }
-    };
-
-    const script = document.createElement("script");
-
-    script.src =
-      "https://www.youtube.com/iframe_api";
-    script.async = true;
-
-    script.onerror = () => {
-      reject(
-        new Error(
-          "Unable to load YouTube's official player API."
-        )
-      );
-    };
-
-    document.head.appendChild(script);
-  });
-
-  return playerApiPromise;
-}
-
-function formatViews(value?: string) {
-  if (!value) return "";
-
-  const n = Number(value);
-
-  if (!Number.isFinite(n)) return "";
-
-  if (n >= 1_000_000_000)
-    return `${(n / 1_000_000_000).toFixed(1)}B views`;
-
-  if (n >= 1_000_000)
-    return `${(n / 1_000_000).toFixed(1)}M views`;
-
-  if (n >= 1_000)
-    return `${(n / 1_000).toFixed(1)}K views`;
-
-  return `${n} views`;
-}
-
 export default function YouTube() {
-  const [videos, setVideos] = useState<Video[]>([]);
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [playing, setPlaying] = useState<Video | null>(null);
   const [error, setError] = useState("");
-  const [playing, setPlaying] = useState<string | null>(null);
-
-  const playerElement = useRef<HTMLDivElement | null>(null);
-  const player = useRef<YouTubePlayer | null>(null);
-
-  async function requestVideos(search?: string) {
-    if (!API_KEY) {
-      setError(
-        "YouTube Data API key is missing. Add VITE_YOUTUBE_API_KEY to .env."
-      );
-      setLoading(false);
+  const [loading, setLoading] = useState(false);
+  const [recent, setRecent] = useState(() =>
+    readPreference<Video[]>("satona.video-history", []),
+  );
+  const abort = useRef<AbortController | null>(null);
+  function play(video: Video) {
+    setPlaying(video);
+    setError("");
+    const next = [
+      video,
+      ...recent.filter((item) => item.id !== video.id),
+    ].slice(0, 12);
+    setRecent(next);
+    savePreference("satona.video-history", next);
+  }
+  async function search(value: string) {
+    const id = youtubeVideoId(value);
+    if (id) {
+      play({
+        id,
+        title: "YouTube video",
+        channel: "Opened from a link",
+        thumbnail: `https://i.ytimg.com/vi/${id}/mqdefault.jpg`,
+      });
       return;
     }
-
+    if (!API_KEY) {
+      setError(
+        "Search is not configured yet. Paste a YouTube video link or video ID to watch directly.",
+      );
+      return;
+    }
+    abort.current?.abort();
+    const controller = new AbortController();
+    abort.current = controller;
     setLoading(true);
     setError("");
-
     try {
-      let ids: string[] = [];
-
-      if (search?.trim()) {
-        const searchUrl =
-          "https://www.googleapis.com/youtube/v3/search?" +
-          new URLSearchParams({
-            part: "snippet",
-            type: "video",
-            videoEmbeddable: "true",
-            videoSyndicated: "true",
-            maxResults: "24",
-            q: search.trim(),
-            key: API_KEY,
-          });
-
-        const response = await fetch(searchUrl);
-
-        if (!response.ok) {
-          throw new Error(
-            `YouTube search failed: ${response.status}`
-          );
-        }
-
-        const data = await response.json();
-
-        ids = (data.items || [])
-          .map((item: any) => item.id?.videoId)
-          .filter(Boolean);
+      const params = new URLSearchParams({
+        part: "snippet",
+        key: API_KEY,
+        maxResults: "24",
+      });
+      if (value.trim()) {
+        params.set("q", value.trim());
+        params.set("type", "video");
+        params.set("videoEmbeddable", "true");
       } else {
-        const popularUrl =
-          "https://www.googleapis.com/youtube/v3/videos?" +
-          new URLSearchParams({
-            part: "snippet,statistics",
-            chart: "mostPopular",
-            regionCode: "US",
-            maxResults: "24",
-            key: API_KEY,
-          });
-
-        const response = await fetch(popularUrl);
-
-        if (!response.ok) {
-          throw new Error(
-            `YouTube trending request failed: ${response.status}`
-          );
-        }
-
-        const data = await response.json();
-
-        setVideos(
-          (data.items || []).map((item: any) => ({
-            id: item.id,
-            title: item.snippet?.title || "Untitled",
-            channel:
-              item.snippet?.channelTitle || "Unknown channel",
-            thumbnail:
-              item.snippet?.thumbnails?.high?.url ||
-              item.snippet?.thumbnails?.medium?.url ||
-              item.snippet?.thumbnails?.default?.url ||
-              "",
-            views: item.statistics?.viewCount,
-          }))
-        );
-
-        setLoading(false);
-        return;
+        params.set("chart", "mostPopular");
+        params.set("regionCode", "US");
       }
-
-      if (!ids.length) {
-        setVideos([]);
-        setLoading(false);
-        return;
-      }
-
-      const detailsUrl =
-        "https://www.googleapis.com/youtube/v3/videos?" +
-        new URLSearchParams({
-          part: "snippet,statistics",
-          id: ids.join(","),
-          key: API_KEY,
-        });
-
-      const details = await fetch(detailsUrl);
-
-      if (!details.ok) {
+      const response = await fetch(
+        `https://www.googleapis.com/youtube/v3/${value.trim() ? "search" : "videos"}?${params}`,
+        { signal: controller.signal },
+      );
+      if (!response.ok)
         throw new Error(
-          `YouTube video lookup failed: ${details.status}`
+          `Video search is unavailable (${response.status}). You can still paste a video link.`,
         );
-      }
-
-      const data = await details.json();
-
-      setVideos(
-        (data.items || []).map((item: any) => ({
-          id: item.id,
-          title: item.snippet?.title || "Untitled",
-          channel:
-            item.snippet?.channelTitle || "Unknown channel",
-          thumbnail:
-            item.snippet?.thumbnails?.high?.url ||
-            item.snippet?.thumbnails?.medium?.url ||
-            item.snippet?.thumbnails?.default?.url ||
-            "",
-          views: item.statistics?.viewCount,
-        }))
-      );
-    } catch (err) {
-      console.error(err);
-
-      setError(
-        "YouTube could not load. Check the API key and YouTube Data API quota."
-      );
+      const data = (await response.json()) as { items?: ApiItem[] };
+      if (!controller.signal.aborted)
+        setVideos(
+          (data.items || [])
+            .map((item) => ({
+              id: typeof item.id === "string" ? item.id : item.id.videoId || "",
+              title: item.snippet?.title || "Untitled video",
+              channel: item.snippet?.channelTitle || "YouTube",
+              thumbnail:
+                item.snippet?.thumbnails?.high?.url ||
+                item.snippet?.thumbnails?.medium?.url ||
+                "",
+            }))
+            .filter((item) => item.id),
+        );
+    } catch (cause) {
+      if (!controller.signal.aborted)
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Video search could not connect.",
+        );
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   }
-
   useEffect(() => {
-    requestVideos();
+    if (API_KEY) void search("");
+    return () => abort.current?.abort();
   }, []);
-
-  async function openVideo(id: string) {
-    setPlaying(id);
-
-    try {
-      await loadPlayerAPI();
-    } catch (err) {
-      console.error(err);
-      setError(
-        "YouTube's official Embedded Player API could not load."
-      );
-    }
-  }
-
-  useEffect(() => {
-    if (!playing) return;
-
-    let cancelled = false;
-
-    async function createPlayer() {
-      try {
-        await loadPlayerAPI();
-
-        if (
-          cancelled ||
-          !playerElement.current ||
-          !window.YT?.Player
-        ) {
-          return;
-        }
-
-        player.current?.destroy();
-
-        player.current = new window.YT.Player(
-          playerElement.current,
-          {
-            width: "100%",
-            height: "100%",
-            videoId: playing,
-            playerVars: {
-              autoplay: 1,
-              playsinline: 1,
-              rel: 0,
-              origin: window.location.origin,
-            },
-            events: {
-              onReady: () => {
-                player.current?.playVideo?.();
-              },
-              onError: (event) => {
-                console.error(
-                  "YouTube Player API error:",
-                  event
-                );
-              },
-            },
-          }
-        );
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    createPlayer();
-
-    return () => {
-      cancelled = true;
-      player.current?.destroy();
-      player.current = null;
-    };
-  }, [playing]);
-
-  function closePlayer() {
-    player.current?.destroy();
-    player.current = null;
-    setPlaying(null);
-  }
-
   return (
     <section className="section-page youtube-page">
-      <div className="section-heading youtube-heading">
+      <div className="section-heading">
         <div>
-          <span className="section-kicker">VIDEO</span>
-          <h1>YouTube</h1>
-          <p>Search and watch YouTube.</p>
+          <span className="section-kicker">ONE MORE VIDEO</span>
+          <h1>
+            The watch room<span className="title-dot">.</span>
+          </h1>
+          <p>Find something worth your time.</p>
         </div>
-
-        <form
-          className="library-search youtube-search"
-          onSubmit={(event) => {
-            event.preventDefault();
-            requestVideos(query);
-          }}
-        >
-          <Icon name="search" size={17} />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search YouTube..."
-          />
-        </form>
       </div>
-
+      <form
+        className="video-link-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void search(query);
+        }}
+      >
+        <input
+          aria-label="Search or paste a YouTube link"
+          placeholder={
+            API_KEY
+              ? "Search YouTube or paste a video link…"
+              : "Paste a YouTube video link or video ID…"
+          }
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        <button disabled={loading}>
+          {loading ? "Searching…" : "Let’s watch ↗"}
+        </button>
+      </form>
       {error && (
-        <div className="youtube-error">
+        <p className="source-error" role="alert">
           {error}
-        </div>
+        </p>
       )}
-
-      {loading ? (
-        <div className="empty-library">
-          <span className="loading-spinner" />
-          <p>Loading YouTube...</p>
-        </div>
-      ) : (
-        <div className="youtube-grid">
-          {videos.map((video) => (
-            <button
-              className="youtube-card"
-              key={video.id}
-              onClick={() => openVideo(video.id)}
-            >
-              <div className="youtube-thumb">
-                <img src={video.thumbnail} alt="" />
-                <span className="youtube-play">
-                  <Icon name="play" size={19} />
-                </span>
-              </div>
-
-              <div className="youtube-info">
-                <strong>{video.title}</strong>
-                <span>{video.channel}</span>
-                <small>{formatViews(video.views)}</small>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-
       {playing && (
-        <div
-          className="youtube-player-backdrop"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              closePlayer();
-            }
-          }}
-        >
-          <div className="youtube-player-modal">
-            <div className="youtube-player-header">
-              <span>Satona YouTube Player</span>
-
-              <button onClick={closePlayer}>
-                <Icon name="x" size={18} />
-              </button>
-            </div>
-
-            <div
-              className="youtube-player"
-              ref={playerElement}
-            />
+        <div className="video-watch">
+          <div className="game-player-toolbar">
+            <h2>{playing.title}</h2>
+            <button
+              className="secondary-button"
+              onClick={() => setPlaying(null)}
+            >
+              Close player ×
+            </button>
           </div>
+          <iframe
+            key={playing.id}
+            className="video-player-inline"
+            title={playing.title}
+            src={`https://www.youtube-nocookie.com/embed/${playing.id}?autoplay=1&rel=0&playsinline=1`}
+            referrerPolicy="strict-origin-when-cross-origin"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+          />
+          <p className="subtle-note">
+            Privacy-enhanced YouTube player. Some videos have age, region, or
+            embedding restrictions.{" "}
+            <a
+              href={`https://www.youtube.com/watch?v=${playing.id}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open on YouTube ↗
+            </a>
+          </p>
+        </div>
+      )}
+      <div className="dashboard-heading">
+        <h2>{videos.length ? "Discover" : "Recently watched"}</h2>
+        <span>PRESS PLAY</span>
+      </div>
+      <div className="youtube-grid">
+        {(videos.length ? videos : recent).map((video) => (
+          <button
+            className="youtube-card"
+            key={video.id}
+            onClick={() => play(video)}
+          >
+            <div className="youtube-thumb">
+              <img src={video.thumbnail} alt="" loading="lazy" />
+              <span className="youtube-play">
+                <Icon name="play" size={20} />
+              </span>
+            </div>
+            <div className="youtube-info">
+              <strong>{video.title}</strong>
+              <span>{video.channel}</span>
+            </div>
+          </button>
+        ))}
+      </div>
+      {!videos.length && !recent.length && !loading && (
+        <div className="empty-library">
+          <Icon name="youtube" size={40} />
+          <h2>Bring a video. Stay a while.</h2>
+          <p>Paste a watch link, short link, Shorts link, or video ID above.</p>
         </div>
       )}
     </section>

@@ -29,7 +29,7 @@ export default function ProxiedApp({ url, title }: Props) {
         }
 
         frameRef.current = controller.createFrame(iframeRef.current);
-        frameRef.current.go(createTarget(url));
+        await frameRef.current.go(createTarget(url));
       } catch (err) {
         console.error(`Satona proxy failed for ${title}:`, err);
 

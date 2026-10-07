@@ -1,371 +1,157 @@
-import * as scramjetUtils from "@mercuryworkshop/scramjet-utils";
-
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-
-import Sidebar, {
-  type Section,
-} from "./components/Sidebar";
-
+import { useEffect, useRef, useState } from "react";
+import type { Frame } from "@mercuryworkshop/scramjet-controller";
+import Sidebar, { type Section } from "./components/Sidebar";
 import BrowserChrome from "./components/BrowserChrome";
 import HomePage from "./components/HomePage";
-import AnimatedGalaxyBackground from "./components/AnimatedGalaxyBackground";
-
+import ProxyTab from "./components/ProxyTab";
 import Games from "./apps/Games";
+import Apps from "./apps/Apps";
 import Chat from "./apps/Chat";
 import Settings from "./apps/Settings";
 import YouTube from "./apps/YouTube";
-
-import {
-  createTarget,
-  ensureController,
-  getController,
-} from "./proxy/scramjet";
-
-type Tab = {
-  id: string;
-  title: string;
-  url: string;
-  started: boolean;
-};
-
-function makeId() {
-  return `${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2, 8)}`;
-}
-
-function getSiteName(url: string) {
-  try {
-    return new URL(url).hostname
-      .replace(/^www\./, "")
-      .split(".")[0];
-  } catch {
-    return "New Tab";
-  }
-}
-
-const SEARCH_ENGINES = {
-  google: "https://www.google.com/search?q=",
-  duckduckgo: "https://duckduckgo.com/?q=",
-  bing: "https://www.bing.com/search?q=",
-  yahoo: "https://search.yahoo.com/search?p=",
-  brave: "https://search.brave.com/search?q=",
-};
-
+import CloudGaming from "./apps/CloudGaming";
+import SavedLinks from "./apps/SavedLinks";
+import { createTarget } from "./proxy/scramjet";
+import { readPreference, savePreference } from "./lib/preferences";
+type Tab = { id: string; title: string; url: string; revision: number };
+const newTabData = (): Tab => ({
+  id: crypto.randomUUID(),
+  title: "New Tab",
+  url: "",
+  revision: 0,
+});
 export default function Browser() {
-  const [section, setSection] =
-    useState<Section>("home");
-
-  const [tabs, setTabs] = useState<Tab[]>([
-    {
-      id: makeId(),
-      title: "New Tab",
-      url: "",
-      started: false,
-    },
-  ]);
-
-  const [activeTab, setActiveTab] =
-    useState(tabs[0].id);
-
+  const [section, setSection] = useState<Section>("home");
+  const [tabs, setTabs] = useState<Tab[]>(() => [newTabData()]);
+  const [activeTab, setActiveTab] = useState(tabs[0].id);
   const [address, setAddress] = useState("");
-
-  const [history, setHistory] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem("satona.history");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [searchEngine, setSearchEngine] =
-    useState("google");
-
-  const frameRefs = useRef<
-    Record<string, HTMLIFrameElement | null>
-  >({});
-
-  const frames = useRef<Record<string, any>>({});
-
-  const active =
-    tabs.find((tab) => tab.id === activeTab) ||
-    tabs[0];
-
+  const [bookmarks, setBookmarks] = useState(() =>
+    readPreference<string[]>("satona.bookmarks", []),
+  );
+  const frames = useRef<Record<string, Frame | null>>({});
+  const active = tabs.find((tab) => tab.id === activeTab) || tabs[0];
   useEffect(() => {
-    const update = () => {
-      setSearchEngine(
-        localStorage.getItem("satona.searchEngine") ||
-          "google"
-      );
-    };
-
-    update();
-
-    window.addEventListener(
-      "satona-settings-change",
-      update
-    );
-
-    return () =>
-      window.removeEventListener(
-        "satona-settings-change",
-        update
-      );
+    setAddress(active.url);
+  }, [active.url, activeTab]);
+  useEffect(() => {
+    const update = () => setBookmarks(readPreference("satona.bookmarks", []));
+    window.addEventListener("satona-preferences", update);
+    return () => window.removeEventListener("satona-preferences", update);
   }, []);
-
   useEffect(() => {
-    setAddress(active?.url || "");
-  }, [activeTab, active?.url]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        "satona.history",
-        JSON.stringify(history)
-      );
-    } catch {}
-  }, [history]);
-
-  useEffect(() => {
-    const handleShortcut = (event: KeyboardEvent) => {
-      if (
-        (event.ctrlKey || event.metaKey) &&
-        event.key.toLowerCase() === "l"
-      ) {
+    const shortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "l") {
         event.preventDefault();
-
-        const input = document.querySelector(
-          ".address-bar input"
-        ) as HTMLInputElement | null;
-
+        const input =
+          document.querySelector<HTMLInputElement>(".address-bar input");
         input?.focus();
         input?.select();
       }
     };
-
-    window.addEventListener("keydown", handleShortcut);
-
-    return () =>
-      window.removeEventListener(
-        "keydown",
-        handleShortcut
-      );
+    window.addEventListener("keydown", shortcut);
+    return () => window.removeEventListener("keydown", shortcut);
   }, []);
-
-  function updateTab(
-    id: string,
-    changes: Partial<Tab>
-  ) {
+  function navigate(value: string) {
+    const url = createTarget(
+      value,
+      localStorage.getItem("satona.searchEngine") || "google",
+    );
+    if (!url) return;
+    let title = "Page";
+    try {
+      title = new URL(url).hostname.replace(/^www\./, "");
+    } catch {}
     setTabs((current) =>
       current.map((tab) =>
-        tab.id === id
-          ? { ...tab, ...changes }
-          : tab
-      )
+        tab.id === activeTab
+          ? { ...tab, url, title, revision: tab.revision + 1 }
+          : tab,
+      ),
     );
-  }
-
-  async function navigate(
-    value = address,
-    tabId = activeTab
-  ) {
-    const engine =
-      SEARCH_ENGINES[
-        searchEngine as keyof typeof SEARCH_ENGINES
-      ] || SEARCH_ENGINES.google;
-
-    const target = createTarget(
-      value,
-      searchEngine
-    );
-
-    if (!target) return;
-
     setSection("home");
-
-    updateTab(tabId, {
-      url: target,
-      title: getSiteName(target),
-      started: true,
-    });
-
-    setAddress(target);
-
-    setHistory((current) => {
-      const next = [
-        target,
-        ...current.filter((item) => item !== target),
-      ];
-
-      return next.slice(0, 100);
-    });
-
-    await ensureController();
-
-    const controller = getController();
-
-    const iframe = frameRefs.current[tabId];
-
-    if (!controller || !iframe) return;
-
-    if (!frames.current[tabId]) {
-      frames.current[tabId] =
-        controller.createFrame(iframe);
-    }
-
-    frames.current[tabId].go(target);
-  }
-
-  function newTab() {
-    const tab = {
-      id: makeId(),
-      title: "New Tab",
-      url: "",
-      started: false,
-    };
-
-    setTabs((current) => [
-      ...current,
-      tab,
-    ]);
-
-    setActiveTab(tab.id);
-    setSection("home");
-    setAddress("");
-  }
-
-  function openSection(next: Section) {
-    setSection(next);
-
-    if (next !== "home") {
-      const current = active;
-
-      if (current?.started) {
-        updateTab(current.id, {
-          started: false,
-          url: "",
-          title: next === "youtube"
-            ? "YouTube"
-            : next[0].toUpperCase() +
-              next.slice(1),
-        });
-      }
-    }
-  }
-
-  function submitHomeSearch(value: string) {
-    setSection("home");
-    navigate(value);
-  }
-
-  function reload() {
-    if (!active?.url) return;
-
-    navigate(active.url);
-  }
-
-  function goBack() {
-    const frame = frames.current[activeTab];
-
-    frame?.back?.();
-  }
-
-  function goForward() {
-    const frame = frames.current[activeTab];
-
-    frame?.forward?.();
-  }
-
-  function fullscreen() {
-    document.documentElement
-      .requestFullscreen?.();
-  }
-
-  function renderSection() {
-    if (section === "home") {
-      return (
-        <HomePage
-          onSection={openSection}
-          onSearch={submitHomeSearch}
-        />
+    setAddress(url);
+    try {
+      const history = readPreference<string[]>("satona.history", []);
+      savePreference(
+        "satona.history",
+        [url, ...history.filter((item) => item !== url)].slice(0, 100),
       );
-    }
-
-    if (section === "games") {
-      return <Games />;
-    }
-
-    if (section === "chat") {
-      return <Chat />;
-    }
-
-    if (section === "settings") {
-      return <Settings />;
-    }
-
-    if (section === "youtube") {
-      return <YouTube />;
-    }
-
+    } catch {}
+  }
+  function openNewTab() {
+    const next = newTabData();
+    setTabs((current) => [...current, next]);
+    setActiveTab(next.id);
+    setSection("home");
+  }
+  function closeTab(id: string) {
+    const next = tabs.filter((tab) => tab.id !== id);
+    if (!next.length) next.push(newTabData());
+    setTabs(next);
+    if (activeTab === id) setActiveTab(next[next.length - 1].id);
+    delete frames.current[id];
+  }
+  function bookmark() {
+    if (!active.url) return;
+    const next = bookmarks.includes(active.url)
+      ? bookmarks.filter((url) => url !== active.url)
+      : [...bookmarks, active.url];
+    setBookmarks(next);
+    savePreference("satona.bookmarks", next);
+  }
+  const sectionPage = () => {
+    if (section === "games") return <Games />;
+    if (section === "apps") return <Apps onOpen={navigate} />;
+    if (section === "cloud") return <CloudGaming onOpen={navigate} />;
+    if (section === "saved") return <SavedLinks onOpen={navigate} />;
+    if (section === "chat") return <Chat />;
+    if (section === "settings") return <Settings />;
+    if (section === "youtube") return <YouTube />;
+    if (section === "home")
+      return <HomePage onSection={setSection} onSearch={navigate} />;
     return (
-      <div className="section-page proxy-section">
+      <section className="section-page proxy-section">
         <div className="proxy-section-content">
-          <span className="section-kicker">
-            SATONA
-          </span>
-
-          <h1>
-            {section === "movies"
-              ? "Anigato"
-              : section === "music"
-              ? "Spotify"
-              : "Discord"}
-          </h1>
-
+          <span className="section-kicker">SET THE MOOD</span>
+          <h1>{section === "movies" ? "Movie night." : "Your soundtrack."}</h1>
           <p>
-            This service opens in Satona.
+            {section === "movies"
+              ? "Explore Anigato in Satona."
+              : "Take Spotify for a spin."}
           </p>
-
           <button
             className="primary-button"
-            onClick={() => {
-              const urls = {
-                movies: "https://anigato.lol/",
-                music: "https://open.spotify.com/",
-                chat: "https://discord.com/app",
-              };
-
+            onClick={() =>
               navigate(
-                urls[
-                  section as
-                    | "movies"
-                    | "music"
-                    | "chat"
-                ]
-              );
-            }}
+                section === "movies"
+                  ? "https://anigato.lol/"
+                  : "https://open.spotify.com/",
+              )
+            }
           >
-            Open
+            Open {section === "movies" ? "Anigato" : "Spotify"} ↗
           </button>
         </div>
-      </div>
+      </section>
     );
-  }
-
+  };
   return (
     <div className="satona-app">
-      <AnimatedGalaxyBackground />
-
       <Sidebar
         section={section}
-        onSection={openSection}
+        onSection={(next) => {
+          if (next === "home") {
+            setTabs((current) =>
+              current.map((tab) =>
+                tab.id === activeTab
+                  ? { ...tab, url: "", title: "New Tab" }
+                  : tab,
+              ),
+            );
+          }
+          setSection(next);
+        }}
       />
-
       <div className="satona-browser-shell">
         <BrowserChrome
           tabs={tabs}
@@ -375,33 +161,62 @@ export default function Browser() {
             setActiveTab(id);
             setSection("home");
           }}
-          onNewTab={newTab}
+          onClose={closeTab}
+          onNewTab={openNewTab}
           onAddress={setAddress}
           onNavigate={() => navigate(address)}
-          onBack={goBack}
-          onForward={goForward}
-          onReload={reload}
-          onHome={() => openSection("home")}
-          onFullscreen={fullscreen}
+          onBack={() => frames.current[activeTab]?.back()}
+          onForward={() => frames.current[activeTab]?.forward()}
+          onReload={() =>
+            setTabs((current) =>
+              current.map((tab) =>
+                tab.id === activeTab
+                  ? { ...tab, revision: tab.revision + 1 }
+                  : tab,
+              ),
+            )
+          }
+          onHome={() => {
+            setTabs((current) =>
+              current.map((tab) =>
+                tab.id === activeTab
+                  ? { ...tab, url: "", title: "New Tab" }
+                  : tab,
+              ),
+            );
+            setSection("home");
+          }}
+          onFullscreen={() => {
+            if (document.fullscreenElement) void document.exitFullscreen();
+            else void document.documentElement.requestFullscreen();
+          }}
+          onBookmark={bookmark}
+          bookmarked={bookmarks.includes(active.url)}
         />
-
         <div className="satona-content">
-          {section === "home" &&
-          active?.started ? (
-            <div className="browser-frame-container">
-              <iframe
-                ref={(element) => {
-                  frameRefs.current[activeTab] =
-                    element;
+          {tabs
+            .filter((tab) => tab.url)
+            .map((tab) => (
+              <div
+                key={tab.id}
+                style={{
+                  display:
+                    section === "home" && activeTab === tab.id
+                      ? "block"
+                      : "none",
+                  height: "100%",
                 }}
-                title="Satona Browser"
-                className="browser-frame"
-                allow="fullscreen; autoplay; gamepad; pointer-lock; clipboard-read; clipboard-write"
-              />
-            </div>
-          ) : (
-            renderSection()
-          )}
+              >
+                <ProxyTab
+                  url={tab.url}
+                  revision={tab.revision}
+                  onFrame={(frame) => {
+                    frames.current[tab.id] = frame;
+                  }}
+                />
+              </div>
+            ))}
+          {(section !== "home" || !active.url) && sectionPage()}
         </div>
       </div>
     </div>

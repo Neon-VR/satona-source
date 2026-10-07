@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createClient, type RealtimeChannel } from "@supabase/supabase-js";
 import Icon from "../components/Icon";
+import { containsSlur, displayChatText } from "../lib/slur-filter";
 
 type ChatMessage = {
   id: number;
@@ -30,7 +31,7 @@ function getSenderId() {
 
 function getDefaultName() {
   const stored = localStorage.getItem(NAME_KEY);
-  if (stored) return stored;
+  if (stored && !containsSlur(stored)) return stored;
   const name = `Guest ${Math.floor(1000 + Math.random() * 9000)}`;
   localStorage.setItem(NAME_KEY, name);
   return name;
@@ -126,6 +127,8 @@ export default function Chat() {
     if (typeof input !== "string") return;
     const trimmed = input.trim().slice(0, 24);
     if (!trimmed) return;
+    if (containsSlur(trimmed)) { setError("Choose a name without slurs. Swear words are allowed."); return; }
+    setError("");
     localStorage.setItem(NAME_KEY, trimmed);
     setName(trimmed);
   }
@@ -134,6 +137,10 @@ export default function Chat() {
     event.preventDefault();
     const content = draft.trim();
     if (!content || !supabase || sending || status !== "connected") return;
+    if (containsSlur(content) || containsSlur(name)) {
+      setError("Slurs are not allowed in messages or names. Ordinary swear words are allowed.");
+      return;
+    }
 
     setSending(true);
     setError("");
@@ -165,7 +172,7 @@ export default function Chat() {
         <div>
           <span className="section-kicker">COMMUNITY</span>
           <h1>Chat</h1>
-          <p>Talk with other people on Satona.</p>
+          <p>Good conversations start here. Slurs are filtered; swear words are allowed.</p>
         </div>
         <form className="chat-name-form" onSubmit={saveName}>
           <label htmlFor="chat-display-name">Your name</label>
@@ -210,10 +217,10 @@ export default function Chat() {
                   key={message.id}
                 >
                   <div className="chat-message-meta">
-                    <strong>{message.username}</strong>
+                    <strong>{displayChatText(message.username, true)}</strong>
                     <time dateTime={message.created_at}>{formatTime(message.created_at)}</time>
                   </div>
-                  <p>{message.content}</p>
+                  <p>{displayChatText(message.content)}</p>
                 </article>
               ))}
             </div>

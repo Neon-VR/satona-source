@@ -1575,19 +1575,23 @@ button {
 
 .settings-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 13px;
 }
 
-.settings-actions button {
+.settings-actions button,
+.settings-actions a {
   padding: 9px 12px;
   border-radius: 9px;
   background: rgba(255,255,255,.07);
   color: #ddd;
   cursor: pointer;
+  text-decoration: none;
 }
 
-.settings-actions button:hover {
+.settings-actions button:hover,
+.settings-actions a:hover {
   background: rgba(255,255,255,.11);
 }
 
@@ -1623,6 +1627,17 @@ button {
   position: absolute;
   inset: 0;
   background: #fff;
+}
+
+.browser-frame-error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: #fff;
+  background: #101018;
+  text-align: center;
 }
 
 .browser-frame {
@@ -1674,3 +1689,12 @@ button {
     width: min(75vw, 300px);
   }
 }
+
+.apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 16px; }
+.app-launcher { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 26px 14px; border: 1px solid rgba(255,255,255,.09); border-radius: 18px; background: rgba(255,255,255,.035); color: #f5f3ff; cursor: pointer; text-align: center; transition: background .18s, transform .18s; }
+.app-launcher:hover { background: rgba(139,92,246,.14); transform: translateY(-3px); }
+.app-launcher:focus-visible { outline: 2px solid #a78bfa; outline-offset: 3px; }
+.app-launcher-icon { width: 64px; height: 64px; display: grid; place-items: center; background: rgba(255,255,255,.06); border-radius: 16px; font-size: 24px; }
+.app-launcher-icon img { width: 44px; height: 44px; object-fit: contain; }
+.app-launcher strong { font-size: 14px; }
+.app-launcher-domain { color: #9c98b0; font-size: 12px; }

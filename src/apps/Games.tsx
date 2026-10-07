@@ -1,305 +1,376 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Icon from "../components/Icon";
-import { censorUiText } from "../lib/censorUiText";
-
-type Game = {
-  id: string;
-  name: string;
-  htmlFile: string;
-  assetFolder?: string;
-  coverFile?: string;
+import { loadGames, type Game } from "../lib/gn-games";
+import { loadLumin } from "../lib/lumin";
+import { readPreference, savePreference } from "../lib/preferences";
+type Entry = Game & {
+  source: "gn-math" | "LuminSDK";
+  imageToken?: string;
+  category?: string;
 };
-
-type GameMetadata = {
-  id: string | number;
-  name?: string;
-};
-
-type GitTree = {
-  tree?: Array<{ path?: string; type?: string }>;
-  message?: string;
-};
-
-const HTML_TREE_URL = "https://api.github.com/repos/gn-math/html/git/trees/main?recursive=1";
-const COVER_TREE_URL = "https://api.github.com/repos/gn-math/covers/git/trees/main?recursive=1";
-const ASSETS_ROOT_URL = "https://api.github.com/repos/gn-math/assets/contents?ref=main";
-const GAME_METADATA_URL = "https://raw.githubusercontent.com/gn-math/assets/main/zones.json";
-const HTML_BASE_URL = "https://raw.githubusercontent.com/gn-math/html/main/";
-const COVER_BASE_URL = "https://raw.githubusercontent.com/gn-math/covers/main/";
-const ASSETS_CONTENT_URL = "https://raw.githubusercontent.com/gn-math/assets/main/";
-const ASSETS_BASE_URL = "https://cdn.jsdelivr.net/gh/gn-math/assets@main/";
-
-function numericId(path: string, extension: string) {
-  const match = path.match(new RegExp(`^(\\d+)(?:-[^/]*)?\\.${extension}$`, "i"));
-  return match?.[1];
-}
-
-async function getTreeFiles(url: string, extension: string) {
-  const response = await fetch(url, {
-    headers: { Accept: "application/vnd.github+json" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`GitHub returned ${response.status}`);
-  }
-
-  const data = (await response.json()) as GitTree;
-  if (!Array.isArray(data.tree)) {
-    throw new Error(data.message || "GitHub returned an invalid file list.");
-  }
-
-  return data.tree
-    .filter((entry) => entry.type === "blob" && typeof entry.path === "string")
-    .map((entry) => entry.path as string)
-    .filter((path) => numericId(path, extension) !== undefined);
-}
-
-async function getAssetFolders() {
-  const response = await fetch(ASSETS_ROOT_URL, {
-    headers: { Accept: "application/vnd.github+json" },
-  });
-  if (!response.ok) {
-    throw new Error(`GN-Math assets returned ${response.status}`);
-  }
-
-  const data = await response.json() as Array<{ name?: string; type?: string }>;
-  if (!Array.isArray(data)) {
-    throw new Error("GN-Math assets returned an invalid file list.");
-  }
-
-  return new Set(
-    data
-      .filter((entry) => entry.type === "dir" && /^\d+$/.test(entry.name ?? ""))
-      .map((entry) => entry.name as string),
+function Cover({ game }: { game: Entry }) {
+  const [src, setSrc] = useState(
+    game.coverFile
+      ? `https://raw.githubusercontent.com/gn-math/covers/main/${game.coverFile}`
+      : "",
   );
-}
-
-async function getGameNames() {
-  const response = await fetch(GAME_METADATA_URL);
-  if (!response.ok) throw new Error(`Library names returned ${response.status}`);
-  const data = await response.json() as GameMetadata[];
-  if (!Array.isArray(data)) throw new Error("The library returned an invalid name list.");
-
-  return new Map(
-    data
-      .filter((game) => game.name?.trim())
-      .map((game) => [String(game.id), game.name!.trim()]),
-  );
-}
-
-function byNumericId(files: string[], extension: string) {
-  const result = new Map<string, string>();
-
-  for (const file of files.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))) {
-    const id = numericId(file, extension);
-    if (!id) continue;
-
-    const current = result.get(id);
-    // Prefer the unmodified `<id>.<extension>` file when multiple versions exist.
-    if (!current || file === `${id}.${extension}`) {
-      result.set(id, file);
-    }
-  }
-
-  return result;
-}
-
-async function loadGames() {
-  const [htmlFiles, coverFiles, assetFolders, namesById] = await Promise.all([
-    getTreeFiles(HTML_TREE_URL, "html"),
-    getTreeFiles(COVER_TREE_URL, "png"),
-    getAssetFolders().catch((error: unknown) => {
-      console.warn("Could not list additional library items:", error);
-      return new Set<string>();
-    }),
-    getGameNames().catch((error: unknown) => {
-      console.warn("Could not load GN-Math game names:", error);
-      return new Map<string, string>();
-    }),
-  ]);
-  const coversById = byNumericId(coverFiles, "png");
-
-  return Array.from(byNumericId(htmlFiles, "html"), ([id, htmlFile]) => ({
-    id,
-    name: censorUiText(namesById.get(id) ?? `Game ${id}`),
-    htmlFile,
-    assetFolder: assetFolders.has(id) ? id : undefined,
-    coverFile: coversById.get(id),
-  })).sort((a, b) => Number(a.id) - Number(b.id));
-}
-
-export default function Games() {
-  const [query, setQuery] = useState("");
-  const [games, setGames] = useState<Game[]>([]);
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-  const [gameHtml, setGameHtml] = useState("");
-  const [gameHtmlError, setGameHtmlError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
   useEffect(() => {
-    let cancelled = false;
-
-    loadGames()
-      .then((loadedGames) => {
-        if (!cancelled) setGames(loadedGames);
+    if (!game.imageToken) return;
+    let active = true;
+    void loadLumin()
+      .then((sdk) => sdk.getImageUrl(game.imageToken!))
+      .then((url) => {
+        if (active) setSrc(url);
       })
-      .catch((err: unknown) => {
-        console.error("Failed to load the library:", err);
-        if (!cancelled) setError("Could not load the library.");
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [game.imageToken]);
+  return src ? (
+    <img src={src} alt="" loading="lazy" onError={() => setSrc("")} />
+  ) : (
+    <span className="game-thumbnail-fallback">
+      {game.name.slice(0, 2).toUpperCase()}
+    </span>
+  );
+}
+export default function Games() {
+  const [source, setSource] = useState("All");
+  const [query, setQuery] = useState("");
+  const [search, setSearch] = useState("");
+  const [gn, setGn] = useState<Entry[]>([]);
+  const [lumin, setLumin] = useState<Entry[]>([]);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [luminLoading, setLuminLoading] = useState(true);
+  const [gnError, setGnError] = useState("");
+  const [luminError, setLuminError] = useState("");
+  const [favorites, setFavorites] = useState(() =>
+    readPreference<string[]>("satona.game-favorites", []),
+  );
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
+  const [selected, setSelected] = useState<Entry | null>(null);
+  const [html, setHtml] = useState("");
+  const [gameUrl, setGameUrl] = useState("");
+  const [playError, setPlayError] = useState("");
+  const [retry, setRetry] = useState(0);
+  const iframe = useRef<HTMLIFrameElement>(null);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    loadGames()
+      .then((games) => {
+        if (active) {
+          setGn(games.map((game) => ({ ...game, source: "gn-math" })));
+          setGnError("");
+        }
+      })
+      .catch(() => {
+        if (active)
+          setGnError("GN-Math could not load. You can still browse LuminSDK.");
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (active) setLoading(false);
       });
-
     return () => {
-      cancelled = true;
+      active = false;
     };
-  }, []);
-
+  }, [retry]);
   useEffect(() => {
-    if (!selectedGame) {
-      setGameHtml("");
-      setGameHtmlError("");
-      return;
-    }
-
-    const controller = new AbortController();
-    setGameHtml("");
-    setGameHtmlError("");
-
-    const htmlUrl = selectedGame.assetFolder
-      ? `${ASSETS_CONTENT_URL}${selectedGame.assetFolder}/index.html`
-      : `${HTML_BASE_URL}${selectedGame.htmlFile}`;
-    const defaultBaseUrl = selectedGame.assetFolder
-      ? `${ASSETS_BASE_URL}${selectedGame.assetFolder}/`
-      : `${HTML_BASE_URL}${selectedGame.htmlFile}`;
-
-    fetch(htmlUrl, {
-      signal: controller.signal,
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error(`Could not load book (${response.status}).`);
-        return response.text();
+    const timer = setTimeout(() => {
+      setSearch(query);
+      setPage(1);
+      setLumin([]);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+  useEffect(() => {
+    let active = true;
+    setLuminLoading(true);
+    setLuminError("");
+    void loadLumin()
+      .then((sdk) => sdk.getGames({ page, limit: 24, q: search }))
+      .then((result) => {
+        if (!active) return;
+        const games = result.games.map((game) => ({
+          id: game.id,
+          name: game.name,
+          htmlFile: "",
+          source: "LuminSDK" as const,
+          imageToken: game.image_token,
+          category: game.category,
+        }));
+        setLumin((current) =>
+          page === 1
+            ? games
+            : [
+                ...current.filter(
+                  (old) => !games.some((game) => game.id === old.id),
+                ),
+                ...games,
+              ],
+        );
+        setPages(result.pages);
       })
-      .then((html) => {
-        const base = `<base href="${defaultBaseUrl}">`;
-        const withBase = /<base\b/i.test(html)
-          ? html
-          : /<head\b[^>]*>/i.test(html)
-            ? html.replace(/<head\b[^>]*>/i, (head) => `${head}${base}`)
-            : `${base}${html}`;
-        setGameHtml(withBase);
+      .catch(() => {
+        if (active)
+          setLuminError(
+            "LuminSDK could not connect. Try again, or choose GN-Math.",
+          );
       })
-      .catch((err: unknown) => {
-        if (!controller.signal.aborted) {
-          console.error("Failed to load GN-Math game HTML:", err);
-          setGameHtmlError("Could not load this book’s HTML file.");
-        }
+      .finally(() => {
+        if (active) setLuminLoading(false);
       });
-
-    return () => controller.abort();
-  }, [selectedGame]);
-
-  const filtered = useMemo(() => {
-    const search = censorUiText(query.toLowerCase().trim()).toLowerCase();
-    return search
-      ? games.filter((game) => game.name.toLowerCase().includes(search) || game.id.includes(search))
-      : games;
-  }, [games, query]);
-
-  if (selectedGame) {
+    return () => {
+      active = false;
+    };
+  }, [page, search, retry]);
+  useEffect(() => {
+    if (!selected) return;
+    let active = true;
+    const abort = new AbortController();
+    setHtml("");
+    setGameUrl("");
+    setPlayError("");
+    void (async () => {
+      try {
+        if (selected.source === "LuminSDK") {
+          const sdk = await loadLumin();
+          const result = await sdk.getGameUrl(selected.id);
+          if (active) setGameUrl(result.url);
+          return;
+        }
+        const path = selected.assetFolder
+          ? `${selected.assetFolder}/index.html`
+          : selected.htmlFile;
+        const base = selected.assetFolder
+          ? `https://cdn.jsdelivr.net/gh/gn-math/assets@main/${selected.assetFolder}/`
+          : `https://raw.githubusercontent.com/gn-math/html/main/${selected.htmlFile}`;
+        const url = `https://raw.githubusercontent.com/gn-math/${selected.assetFolder ? "assets" : "html"}/main/${path}`;
+        const response = await fetch(url, { signal: abort.signal });
+        if (!response.ok) throw new Error();
+        const text = await response.text();
+        const withBase = /<base\b/i.test(text)
+          ? text
+          : text.replace(
+              /<head\b[^>]*>/i,
+              (head) => `${head}<base href="${base}">`,
+            );
+        if (active)
+          setHtml(
+            withBase === text && !/<base\b/i.test(text)
+              ? `<base href="${base}">${text}`
+              : withBase,
+          );
+      } catch {
+        if (active)
+          setPlayError(
+            "This game could not be loaded. Go back and try another game.",
+          );
+      }
+    })();
+    return () => {
+      active = false;
+      abort.abort();
+    };
+  }, [selected]);
+  const filtered = useMemo(
+    () =>
+      gn.filter(
+        (game) =>
+          game.name.toLowerCase().includes(search.toLowerCase()) ||
+          game.id.includes(search),
+      ),
+    [gn, search],
+  );
+  const games = useMemo(() => {
+    const first = source === "LuminSDK" ? [] : filtered.slice(0, page * 24);
+    const second = source === "gn-math" ? [] : lumin;
+    const merged: Entry[] = [];
+    for (let i = 0; i < Math.max(first.length, second.length); i++) {
+      if (first[i]) merged.push(first[i]);
+      if (second[i]) merged.push(second[i]);
+    }
+    return onlyFavorites
+      ? merged.filter((game) => favorites.includes(`${game.source}:${game.id}`))
+      : merged;
+  }, [source, filtered, lumin, page, onlyFavorites, favorites]);
+  const hasMore =
+    (source !== "LuminSDK" && filtered.length > page * 24) ||
+    (source !== "gn-math" && page < pages);
+  if (selected)
     return (
       <section className="section-page game-player-page">
         <div className="game-player-toolbar">
-          <button className="game-player-back" onClick={() => setSelectedGame(null)}>
-            ← Books
+          <button
+            className="secondary-button"
+            onClick={() => setSelected(null)}
+          >
+            ← All games
           </button>
-          <span>{selectedGame.name}</span>
+          <strong>{selected.name}</strong>
+          <button
+            className="secondary-button"
+            onClick={() => void iframe.current?.requestFullscreen()}
+          >
+            Fullscreen ↗
+          </button>
         </div>
-        {gameHtmlError ? (
-          <div className="game-player-message">{gameHtmlError}</div>
-        ) : gameHtml ? (
+        {playError ? (
+          <p className="source-error" role="alert">
+            {playError}
+          </p>
+        ) : html || gameUrl ? (
           <iframe
+            ref={iframe}
             className="game-player-frame"
-            srcDoc={gameHtml}
-            title={selectedGame.name}
+            title={selected.name}
+            src={gameUrl || undefined}
+            srcDoc={html || undefined}
+            sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms allow-popups"
             allow="fullscreen; autoplay; gamepad; pointer-lock"
             allowFullScreen
           />
         ) : (
-          <div className="game-player-message">Loading book…</div>
+          <div className="empty-library">Loading your game…</div>
         )}
       </section>
     );
-  }
-
   return (
     <section className="section-page games-page">
       <div className="section-heading">
         <div>
-          <span className="section-kicker">LIBRARY</span>
-          <h1>Books</h1>
-          <p>Browse the library.</p>
+          <span className="section-kicker">PRESS PLAY ON SOMETHING GOOD</span>
+          <h1>
+            The arcade<span className="title-dot">.</span>
+          </h1>
+          <p>Two libraries. Endless rabbit holes. Zero installs.</p>
         </div>
-
         <div className="library-search">
           <Icon name="search" size={17} />
           <input
+            aria-label="Search games"
+            placeholder="Find your next favorite…"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search books..."
           />
         </div>
       </div>
-
-      {loading ? (
-        <div className="empty-library">
-          <Icon name="games" size={30} />
-          <h2>Loading books...</h2>
-          <p>Getting the latest library entries and covers.</p>
-        </div>
-      ) : error ? (
-        <div className="empty-library">
-          <Icon name="games" size={30} />
-          <h2>Unable to load books</h2>
-          <p>{error}</p>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="empty-library">
-          <Icon name="games" size={30} />
-          <h2>No books found</h2>
-          <p>Try searching for another book.</p>
-        </div>
-      ) : (
-        <div className="games-grid">
-          {filtered.map((game) => (
-            <article className="game-card" key={game.id}>
+      <div className="library-controls">
+        <label className="game-source-label">
+          GAME SOURCE
+          <select
+            aria-label="Game source"
+            value={source}
+            onChange={(event) => setSource(event.target.value)}
+          >
+            <option>All</option>
+            <option>LuminSDK</option>
+            <option>gn-math</option>
+          </select>
+        </label>
+        <button
+          className={`filter-chip ${onlyFavorites ? "active" : ""}`}
+          onClick={() => setOnlyFavorites(!onlyFavorites)}
+        >
+          ☆ Favorites
+        </button>
+        <button
+          className="filter-chip"
+          disabled={!games.length}
+          onClick={() =>
+            setSelected(games[Math.floor(Math.random() * games.length)])
+          }
+        >
+          Surprise me ↗
+        </button>
+        <span>{games.length} games shown</span>
+      </div>
+      {source !== "LuminSDK" && gnError && (
+        <p className="source-error">
+          {gnError}{" "}
+          <button
+            className="secondary-button"
+            onClick={() => setRetry(retry + 1)}
+          >
+            Retry
+          </button>
+        </p>
+      )}
+      {source !== "gn-math" && luminError && (
+        <p className="source-error">
+          {luminError}{" "}
+          <button
+            className="secondary-button"
+            onClick={() => setRetry(retry + 1)}
+          >
+            Retry
+          </button>
+        </p>
+      )}
+      <div className="games-grid">
+        {games.map((game) => {
+          const key = `${game.source}:${game.id}`;
+          return (
+            <article className="game-card" key={key}>
               <div className="game-thumbnail">
-                {game.coverFile ? (
-                  <img
-                    src={`${COVER_BASE_URL}${game.coverFile}`}
-                    alt={`${game.name} cover`}
-                    loading="lazy"
-                    onError={(event) => {
-                      event.currentTarget.style.display = "none";
-                      event.currentTarget.parentElement?.classList.add("has-no-cover");
-                    }}
-                  />
-                ) : null}
-                <span className="game-thumbnail-fallback">{game.id}</span>
+                <Cover game={game} />
+                <button
+                  className={`game-favorite ${favorites.includes(key) ? "active" : ""}`}
+                  aria-label={`Favorite ${game.name}`}
+                  aria-pressed={favorites.includes(key)}
+                  onClick={() => {
+                    const next = favorites.includes(key)
+                      ? favorites.filter((id) => id !== key)
+                      : [...favorites, key];
+                    setFavorites(next);
+                    savePreference("satona.game-favorites", next);
+                  }}
+                >
+                  ☆
+                </button>
                 <button
                   className="game-play-button"
-                  onClick={() => setSelectedGame(game)}
+                  onClick={() => setSelected(game)}
                 >
                   <Icon name="play" size={15} />
                   Play
                 </button>
               </div>
               <h2 className="game-card-title">{game.name}</h2>
+              <small>
+                {game.source}
+                {game.category ? ` · ${game.category}` : ""}
+              </small>
             </article>
-          ))}
+          );
+        })}
+      </div>
+      {!games.length && (
+        <div className="empty-library">
+          <h2>
+            {(source !== "LuminSDK" && loading) ||
+            (source !== "gn-math" && luminLoading)
+              ? "Opening the arcade…"
+              : "Nothing here yet"}
+          </h2>
+          <p>
+            {onlyFavorites
+              ? "Star a game to find it here."
+              : "Try a different search or game source."}
+          </p>
         </div>
+      )}
+      {hasMore && (
+        <button
+          className="secondary-button load-more"
+          disabled={luminLoading && source !== "gn-math"}
+          onClick={() => setPage(page + 1)}
+        >
+          Load more games
+        </button>
       )}
     </section>
   );

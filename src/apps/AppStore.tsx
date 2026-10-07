@@ -1,5 +1,4 @@
 import Icon from "../components/Icon";
-import { EMBEDDED_APPS } from "./EmbeddedApps";
 
 type Props = {
   installed: string[];

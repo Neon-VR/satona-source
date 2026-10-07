@@ -1,0 +1,12 @@
+<!doctype html><title>Satona relay checks</title><h1>Relay checks</h1><pre id="results"></pre><script type="module">
+import Epoxy from '@mercuryworkshop/epoxy-transport';
+import Libcurl from '@mercuryworkshop/libcurl-transport';
+const output=document.querySelector('#results');
+for(const [name,Transport] of [['Epoxy',Epoxy],['libcurl',Libcurl]]) {
+ const client=new Transport({wisp:'wss://satona-wisp-browser-20261005.satona.workers.dev/wisp/'}); await client.init();
+ for(const url of ['https://www.google.com/search?q=cats','https://html.duckduckgo.com/html/?q=cats','https://www.tiktok.com/','https://www.tiktok.com/foryou']) {
+  try {const r=await client.request(new URL(url),'GET',null,[],AbortSignal.timeout(20000)); output.textContent+=`${name} ${url}: ${r.status}\n`; await new Response(r.body).arrayBuffer();} catch(e){output.textContent+=`${name} ${url}: ${e.message}\n`;}
+ }
+}
+output.textContent+='DONE';
+</script>
