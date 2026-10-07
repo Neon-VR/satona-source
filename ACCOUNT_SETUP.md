@@ -66,5 +66,9 @@ still depend on Scramjet compatibility, and websites may demand authentication.
 Validation: 35 local automated checks pass, including real SQLite migrations,
 username auth, optional email, rate limiting, session expiry/revocation, encrypted
 backup isolation, conflict handling, and cryptographic round trips. The live
-service readiness check passes. A temporary production-account test requires
-explicit approval and has not run yet.
+service readiness check passes. On October 7, 2026, the user-approved live test
+also passed: username registration/login without email, wrong-password rejection,
+encrypted backup restoration in a second independent session, cross-account
+isolation, stale-write rejection, and logout revocation. The two synthetic test
+accounts and their sessions/backups were removed after testing. This test does
+not establish Google/NVIDIA session compatibility on a second physical device.
