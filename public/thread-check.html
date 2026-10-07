@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Satona thread check</title>
+<style>
+  body { margin: 3rem; background: #100b22; color: #eee6ff; font: 18px/1.6 system-ui; }
+  h1 { color: #c4a1ff; } li { margin: .5rem 0; }
+</style>
+<h1>Satona thread check</h1>
+<p>This checks real shared memory in a worker, including when opened through the proxy.</p>
+<ul id="results"></ul>
+<script>
+  const results = document.querySelector('#results');
+  function report(label, passed) {
+    const item = document.createElement('li');
+    item.textContent = `${passed ? 'PASS' : 'FAIL'} — ${label}`;
+    results.append(item);
+  }
+  report('Secure context', isSecureContext);
+  report('Cross-origin isolated', crossOriginIsolated);
+  report('SharedArrayBuffer available', typeof SharedArrayBuffer === 'function');
+  if (typeof SharedArrayBuffer === 'function') {
+    const buffer = new SharedArrayBuffer(4);
+    const url = URL.createObjectURL(new Blob([
+      'onmessage = ({data}) => { Atomics.add(new Int32Array(data), 0, 1); postMessage(crossOriginIsolated); };'
+    ], { type: 'text/javascript' }));
+    const worker = new Worker(url);
+    const timeout = setTimeout(() => finish(false), 10000);
+    function finish(passed) {
+      clearTimeout(timeout);
+      worker.terminate();
+      URL.revokeObjectURL(url);
+      report('Worker shared-memory round trip', passed);
+    }
+    worker.onmessage = ({data}) => finish(data === true && Atomics.load(new Int32Array(buffer), 0) === 1);
+    worker.onerror = () => finish(false);
+    try { worker.postMessage(buffer); } catch { finish(false); }
+  }
+</script>

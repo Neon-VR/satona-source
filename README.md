@@ -49,6 +49,19 @@ fix: a null/omitted pushState/replaceState URL must remain absent rather than be
 rewritten to a `/null` destination (which can cause TikTok 404s). Preserve this
 patch when updating vendored Scramjet assets, or upgrade to an upstream fix.
 
+### Threaded games
+
+The HTTPS host must return `Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: credentialless` on the top-level Satona document.
+The SATONA-STUDY Bunny zone applies these through the **Enable threaded games**
+edge rule for all request URLs. Vite development and preview use the same headers.
+Scramjet detects the isolated parent and supplies the required isolation headers
+on proxied documents and worker scripts, enabling SharedArrayBuffer and WASM
+threads. Adding these headers only to Wisp responses cannot isolate the parent.
+After changing the CDN rule, purge its cache and fully reload Satona before
+opening a new game frame. External games embedded directly must also support
+COEP; games opened through Scramjet receive its rewritten response headers.
+
 ## Checks
 
 ```

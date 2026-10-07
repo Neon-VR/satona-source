@@ -21,6 +21,7 @@ const files = [
   "utils",
   "icons",
   "sw.js",
+  "thread-check.html",
   "favicon.svg",
   "icons.svg",
   "satona-browser-logo.png",
