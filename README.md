@@ -83,9 +83,13 @@ its build finishes. A source push alone is not proof that the CDN has updated.
 Bunny storage uses the `satona-site/dist` directory. The storage zone's custom
 404 document is currently `/dist/index-webos-20261007.html`, a versioned copy of the
 production index. When deploying the next release, upload its hashed assets
-first, then a new versioned HTML entry, update that custom document path, and
+first, then both `index.html` and a new versioned HTML entry, update that custom document path, and
 purge SATONA-STUDY. Verify the bundle URL on the public root; replacing
 `index.html` alone can leave Bunny's custom fallback document stale.
+The **Refresh Satona entry pages** edge rule sets `no-cache, max-age=0,
+must-revalidate` for the root, HTML entries, and service worker. Hashed assets
+keep their long cache lifetime. Browsers holding an older entry with the previous
+long cache lifetime need one hard refresh or a fresh `?v=<release>` URL.
 
 For optional npm asset distribution, run
 `node scripts/prepare-cdn.mjs <npm-package-name> <version>` after building.
