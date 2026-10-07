@@ -72,3 +72,7 @@ encrypted backup restoration in a second independent session, cross-account
 isolation, stale-write rejection, and logout revocation. The two synthetic test
 accounts and their sessions/backups were removed after testing. This test does
 not establish Google/NVIDIA session compatibility on a second physical device.
+
+On October 7, 2026, the user confirmed that sign-in works across devices.
+The exact third-party sites tested were not specified; individual sites can still
+require a new login when their security checks or device-bound credentials apply.
