@@ -36,6 +36,9 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.11.0)
+      '@rolldown/binding-linux-x64-gnu':
+        specifier: 1.2.11
+        version: 1.2.11
       '@types/node':
         specifier: ^24.13.3
         version: 24.13.6
@@ -327,6 +330,12 @@ packages:
     cpu: [s390x]
     os: [linux]
     libc: [glibc]
+
+  '@rolldown/binding-linux-x64-gnu@1.2.11':
+    resolution: {integrity: sha512-mOVBT3dPpkWm8XBWPmU4bf+U6dYDLeMo/9ojUmis4N0L5uu10qra5vOyngZ7/PSdoE4G9KvRt4bloRxNjLas7A==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [linux]
 
   '@rolldown/binding-linux-x64-gnu@1.2.9':
     resolution: {integrity: sha512-9s0AZ8BFK5/n7B/TBoa2yJE3gI3KURrbXcPBlsAsvjU4VeJKgE90y1YtNxyEUIcHPQkg6/yfF3qihUrcM/Kf0Q==}
@@ -1374,6 +1383,8 @@ snapshots:
 
   '@rolldown/binding-linux-s390x-gnu@1.2.9':
     optional: true
+
+  '@rolldown/binding-linux-x64-gnu@1.2.11': {}
 
   '@rolldown/binding-linux-x64-gnu@1.2.9':
     optional: true
