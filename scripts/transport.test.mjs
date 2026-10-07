@@ -12,6 +12,9 @@ function setup({
   httpRelay,
   engine = "epoxy",
   status = 200,
+  initGate,
+  initFails = false,
+  firstRequestSucceeds = false,
 } = {}) {
   let attempts = 0;
   let initializations = 0;
@@ -21,14 +24,22 @@ function setup({
   class Epoxy {
     constructor({ wisp }) {
       this.wisp = wisp;
+      this.ready = false;
     }
     async init() {
       initializations++;
+      if (initGate) await initGate;
+      if (initFails && initializations === 1)
+        throw new Error("Initialization failed");
       this.client = {};
+      this.ready = true;
     }
     async request() {
       attempts++;
-      if (attempts === 1 || persistent) throw new Error(failure);
+      if (!this.client)
+        throw new TypeError("Cannot read properties of null (reading 'fetch')");
+      if ((!firstRequestSucceeds && attempts === 1) || persistent)
+        throw new Error(failure);
       return { status: 200 };
     }
   }
@@ -90,6 +101,41 @@ function setup({
     httpRequests,
   };
 }
+
+test("cold metadata requests wait for transport initialization without opening a frame", async () => {
+  for (const engine of ["epoxy", "libcurl"]) {
+    let release;
+    const gate = new Promise((resolve) => {
+      release = resolve;
+    });
+    const state = setup({ engine, initGate: gate, firstRequestSucceeds: true });
+    const starting = state.transport.init();
+    const requests = [
+      state.transport.request(...state.args),
+      state.transport.request(...state.args),
+    ];
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.deepEqual(state.counts(), { attempts: 0, initializations: 1 });
+    release();
+    await starting;
+    assert.deepEqual(
+      (await Promise.all(requests)).map((result) => result.status),
+      [200, 200],
+    );
+    assert.deepEqual(state.counts(), { attempts: 2, initializations: 1 });
+  }
+});
+
+test("a failed initialization can be retried without sending a request early", async () => {
+  const state = setup({ initFails: true, firstRequestSucceeds: true });
+  await assert.rejects(
+    state.transport.request(...state.args),
+    /Initialization failed/,
+  );
+  assert.equal(state.counts().attempts, 0);
+  assert.equal((await state.transport.request(...state.args)).status, 200);
+  assert.deepEqual(state.counts(), { attempts: 1, initializations: 2 });
+});
 
 test("disconnected GET rebuilds the client and retries once", async () => {
   const state = setup();

@@ -4,6 +4,7 @@ import Epoxy from "@mercuryworkshop/epoxy-transport";
 // sharing recovery between concurrent requests from the same page.
 export class ReconnectingTransport extends Epoxy {
   private recovery: Promise<void> | null = null;
+  private initialization: Promise<void> | null = null;
   private httpRelay?: string;
   private httpOrigins = new Set<string>();
   private engine: "epoxy" | "libcurl";
@@ -78,7 +79,15 @@ export class ReconnectingTransport extends Epoxy {
     };
   }
 
-  override async init() {
+  override init(): Promise<void> {
+    // Controller startup and Scramjet's first frame may initialize together.
+    // Share that work so a request never sees a half-created transport.
+    return (this.initialization ||= this.initialize().finally(() => {
+      this.initialization = null;
+    }));
+  }
+
+  private async initialize() {
     if (new URL(this.wisp).hostname.endsWith(".onrender.com")) {
       const health = new URL("/healthz", this.wisp.replace(/^ws/, "http"));
       await fetch(health, {
@@ -138,6 +147,7 @@ export class ReconnectingTransport extends Epoxy {
       !signal?.aborted;
     if (this.httpRelay && safeToRetry && this.httpOrigins.has(remote.origin))
       return this.requestHttp(...args);
+    if (!this.ready) await this.init();
     if (this.recovery) await this.recovery;
     const failedClient = this.generation;
     try {

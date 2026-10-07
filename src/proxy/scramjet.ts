@@ -91,7 +91,9 @@ export async function ensureController() {
     });
 
     await Promise.race([
-      nextController.wait(),
+      // Controller.wait() only waits for its worker/WASM handshake, not the
+      // transport. Metadata requests can run before any frame initializes it.
+      Promise.all([nextController.wait(), transport.init()]),
       new Promise<never>((_, reject) =>
         setTimeout(
           () =>
