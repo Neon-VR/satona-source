@@ -42,6 +42,17 @@ export default function Browser({
     readPreference<string[]>("satona.bookmarks", []),
   );
   const frames = useRef<Record<string, Frame | null>>({});
+  const browserShell = useRef<HTMLDivElement>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+  useEffect(() => {
+    const changed = () => {
+      setFullscreen(document.fullscreenElement === browserShell.current);
+      setShowControls(false);
+    };
+    document.addEventListener("fullscreenchange", changed);
+    return () => document.removeEventListener("fullscreenchange", changed);
+  }, []);
   const active = tabs.find((tab) => tab.id === activeTab) || tabs[0];
   useEffect(() => {
     setAddress(active.url);
@@ -53,13 +64,24 @@ export default function Browser({
   }, []);
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
+      if (
+        event.key === "Escape" &&
+        document.fullscreenElement === browserShell.current
+      ) {
+        void document.exitFullscreen();
+        return;
+      }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "l") {
-        const input =
-          document.querySelector<HTMLInputElement>(embedded ? ".os-focused .address-bar input" : ".address-bar input");
+        const input = document.querySelector<HTMLInputElement>(
+          embedded ? ".os-focused .address-bar input" : ".address-bar input",
+        );
         if (!input) return;
         event.preventDefault();
-        input?.focus();
-        input?.select();
+        setShowControls(true);
+        requestAnimationFrame(() => {
+          input.focus();
+          input.select();
+        });
       }
     };
     window.addEventListener("keydown", shortcut);
@@ -214,48 +236,66 @@ export default function Browser({
           }}
         />
       )}
-      <div className="satona-browser-shell">
-        <BrowserChrome
-          tabs={tabs}
-          activeTab={activeTab}
-          address={address}
-          onTab={(id) => {
-            setActiveTab(id);
-            setSection("home");
-          }}
-          onClose={closeTab}
-          onNewTab={openNewTab}
-          onAddress={setAddress}
-          onNavigate={() => navigate(address)}
-          onBack={() => frames.current[activeTab]?.back()}
-          onForward={() => frames.current[activeTab]?.forward()}
-          onReload={() =>
-            setTabs((current) =>
-              current.map((tab) =>
-                tab.id === activeTab
-                  ? { ...tab, revision: tab.revision + 1 }
-                  : tab,
-              ),
-            )
-          }
-          onHome={() => {
-            setTabs((current) =>
-              current.map((tab) =>
-                tab.id === activeTab
-                  ? { ...tab, url: "", title: "New Tab" }
-                  : tab,
-              ),
-            );
-            setSection("home");
-          }}
-          onFullscreen={() => {
-            if (document.fullscreenElement) void document.exitFullscreen();
-            else void document.documentElement.requestFullscreen();
-          }}
-          onBookmark={bookmark}
-          bookmarked={bookmarks.includes(active.url)}
-        />
-        <div className="satona-content">
+      <div className="satona-browser-shell" ref={browserShell}>
+        {fullscreen && (
+          <button
+            className="fullscreen-reveal-edge"
+            aria-label="Show browser tabs"
+            onPointerEnter={() => setShowControls(true)}
+            onFocus={() => setShowControls(true)}
+            onClick={() => setShowControls(true)}
+          />
+        )}
+        <div
+          className={`browser-controls ${showControls ? "controls-revealed" : ""}`}
+          onPointerLeave={() => setShowControls(false)}
+        >
+          <BrowserChrome
+            tabs={tabs}
+            activeTab={activeTab}
+            address={address}
+            onTab={(id) => {
+              setActiveTab(id);
+              setSection("home");
+            }}
+            onClose={closeTab}
+            onNewTab={openNewTab}
+            onAddress={setAddress}
+            onNavigate={() => navigate(address)}
+            onBack={() => frames.current[activeTab]?.back()}
+            onForward={() => frames.current[activeTab]?.forward()}
+            onReload={() =>
+              setTabs((current) =>
+                current.map((tab) =>
+                  tab.id === activeTab
+                    ? { ...tab, revision: tab.revision + 1 }
+                    : tab,
+                ),
+              )
+            }
+            onHome={() => {
+              setTabs((current) =>
+                current.map((tab) =>
+                  tab.id === activeTab
+                    ? { ...tab, url: "", title: "New Tab" }
+                    : tab,
+                ),
+              );
+              setSection("home");
+            }}
+            onFullscreen={() => {
+              if (document.fullscreenElement) void document.exitFullscreen();
+              else void browserShell.current?.requestFullscreen();
+            }}
+            onBookmark={bookmark}
+            bookmarked={bookmarks.includes(active.url)}
+          />
+        </div>
+        <div
+          className="satona-content"
+          onPointerEnter={() => setShowControls(false)}
+          onPointerDown={() => setShowControls(false)}
+        >
           {tabs
             .filter((tab) => tab.url)
             .map((tab) => (

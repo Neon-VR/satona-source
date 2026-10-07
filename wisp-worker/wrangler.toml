@@ -3,6 +3,12 @@ main = "src/index.js"
 compatibility_date = "2026-10-05"
 workers_dev = true
 
+[[d1_databases]]
+binding = "ACCOUNTS"
+database_name = "satona-accounts"
+database_id = "6cc44bdb-4d0a-4c4b-be13-c633fa5ef2f4"
+migrations_dir = "migrations"
+
 [vars]
 ALLOWED_ORIGINS = "https://satona-study.b-cdn.net,http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174"
 

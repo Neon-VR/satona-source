@@ -30,7 +30,7 @@ A local Node relay can use `ws://127.0.0.1:4000/`.
   Apply `CHAT_MODERATION.sql` in Supabase to enforce the filter at the database too;
   a browser-only filter does not prevent direct API submissions.
 
-Satona Steam provides Store and Library views with free, ready-to-play catalog games, favorites, and recent games. Preferences, bookmarks, notes, and history are stored on the current device. The Satona Account UI and encrypted backup API are implemented; cloud sync remains unavailable until provisioning and live validation described in ACCOUNT_SETUP.md are complete.
+Satona Steam provides Store and Library views with free, ready-to-play catalog games, favorites, and recent games. Preferences, bookmarks, notes, and history are stored on the current device. Satona Account uses username/password sign-in, with optional email during registration. The Cloudflare-backed encrypted backup service is deployed; see ACCOUNT_SETUP.md for data coverage and limits.
 
 ## Relay and browser compatibility
 
@@ -81,7 +81,7 @@ integration. Verify the deployed site at `https://satona-study.b-cdn.net/` after
 its build finishes. A source push alone is not proof that the CDN has updated.
 
 Bunny storage uses the `satona-site/dist` directory. The storage zone's custom
-404 document is currently `/dist/index-video-startup-20261007.html`, a versioned copy of the
+404 document is currently `/dist/index-steam-20261007.html`, a versioned copy of the
 production index. When deploying the next release, upload its hashed assets
 first, then both `index.html` and a new versioned HTML entry, update that custom document path, and
 purge SATONA-STUDY. Verify the bundle URL on the public root; replacing
@@ -99,6 +99,6 @@ an HTTPS host for the same-origin service worker.
 
 
 
-The Satona Steam build is prepared in `cdn-package/`, including
-`index-steam-20261007.html`. It has not been uploaded: the Bunny dashboard session
-expired. After upload, update the custom 404 entry and purge as above.
+Satona Steam shows complete provider totals and appends cards automatically near the bottom.
+Browser fullscreen hides the Legacy sidebar and WebOS desktop. Its tab/address controls slide
+over the page from the top edge and hide when the pointer returns to the page. Escape exits.

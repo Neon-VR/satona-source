@@ -1,168 +1,209 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {
+  accountAuth,
+  makeVerifier,
+  checkVerifier,
+  tokenHash,
+} from "../src/account-auth.js";
 import { accountSync } from "../src/account-sync.js";
-const origin = "https://satona-study.b-cdn.net";
-const uid = "11111111-1111-4111-8111-111111111111",
-  other = "22222222-2222-4222-8222-222222222222";
+import { setup, request } from "./helpers/d1.js";
+const proof = "a".repeat(64);
 const vault = {
   version: 1,
   iv: "abcdefghijklmnop",
   ciphertext: "abcdefghijklmnopqrstuvwx",
 };
-function setup() {
-  const rows = new Map();
-  const db = {
-    prepare(sql) {
-      return {
-        bind(...args) {
-          return {
-            async first() {
-              return rows.get(args[0]) || null;
-            },
-            async run() {
-              if (sql.startsWith("INSERT")) {
-                const [id, payload, date] = args;
-                if (rows.has(id)) return { meta: { changes: 0 } };
-                rows.set(id, { payload, revision: 1, updated_at: date });
-              } else {
-                const [payload, date, id, revision] = args;
-                const old = rows.get(id);
-                if (!old || old.revision !== revision)
-                  return { meta: { changes: 0 } };
-                rows.set(id, {
-                  payload,
-                  revision: revision + 1,
-                  updated_at: date,
-                });
-              }
-              return { meta: { changes: 1 } };
-            },
-          };
-        },
-      };
-    },
-  };
-  return {
-    rows,
-    env: {
-      ALLOWED_ORIGINS: origin,
-      ACCOUNTS: db,
-      SUPABASE_URL: "https://auth.example",
-      SUPABASE_ANON_KEY: "public",
-    },
-  };
+async function register(env, username) {
+  const r = await accountAuth(
+    request("register", "POST", { username, proof }),
+    env,
+  );
+  assert.equal(r.status, 201);
+  return r.json();
 }
-function req(method = "GET", body, token = "a".repeat(30), from = origin) {
-  return new Request("https://relay.example/account/sync", {
-    method,
-    headers: {
-      Origin: from,
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-}
-const auth =
-  (id = uid) =>
-  async () =>
-    Response.json({ id, email_confirmed_at: "2026-10-07" });
-test("backup access requires an allowed origin and server-verified confirmed user", async () => {
-  const { env } = setup();
-  let calls = 0;
-  const noCall = async () => {
-    calls++;
-    throw Error();
-  };
+test("username-only registration, login and logout use salted verifiers and hashed expiring sessions", async () => {
+  const { env, db } = setup();
+  const a = await register(env, "test_user");
+  const row = db.prepare("SELECT * FROM accounts").get();
+  assert.equal(row.email, null);
+  assert.notEqual(row.verifier, proof);
+  assert.equal(
+    db.prepare("SELECT * FROM account_sessions").get().token_hash,
+    await tokenHash(a.token),
+  );
+  let r = await accountAuth(
+    request("login", "POST", { username: "TEST_USER", proof }),
+    env,
+  );
+  assert.equal(r.status, 200);
+  assert.equal((await r.json()).user.id, a.user.id);
   assert.equal(
     (
-      await accountSync(
-        req("GET", undefined, undefined, "https://evil.example"),
+      await accountAuth(
+        request("login", "POST", {
+          username: "test_user",
+          proof: "b".repeat(64),
+        }),
         env,
-        noCall,
-      )
-    ).status,
-    403,
-  );
-  assert.equal(
-    (await accountSync(req("GET", undefined, "bad"), env, noCall)).status,
-    401,
-  );
-  assert.equal(calls, 0);
-  assert.equal(
-    (
-      await accountSync(
-        req(),
-        env,
-        async () => new Response("", { status: 401 }),
       )
     ).status,
     401,
   );
   assert.equal(
-    (await accountSync(req(), env, async () => Response.json({ id: uid })))
-      .status,
-    403,
-  );
-});
-test("encrypted backups are isolated by authenticated user and reject stale device writes", async () => {
-  const { env, rows } = setup();
-  assert.equal(
     (
-      await accountSync(
-        req("PUT", { vault, revision: 0, user_id: other }),
+      await accountAuth(
+        request("register", "POST", { username: "TEST_USER", proof }),
         env,
-        auth(),
       )
     ).status,
+    409,
+  );
+  assert.equal(
+    (await accountSync(request("sync", "GET", undefined, a.token), env)).status,
     200,
   );
-  assert.ok(rows.has(uid));
-  assert.ok(!rows.has(other));
+  await accountAuth(request("logout", "POST", undefined, a.token), env);
   assert.equal(
-    (await (await accountSync(req(), env, auth(other))).json()).vault,
+    (await accountSync(request("sync", "GET", undefined, a.token), env)).status,
+    401,
+  );
+  const b = await register(env, "second_user");
+  db.prepare("UPDATE account_sessions SET expires_at = 0").run();
+  assert.equal(
+    (await accountSync(request("sync", "GET", undefined, b.token), env)).status,
+    401,
+  );
+  db.close();
+});
+test("encrypted backups isolate users and reject stale writes, plaintext, and oversized bodies", async () => {
+  const { env, db } = setup();
+  const a = await register(env, "first_user"),
+    b = await register(env, "other_user");
+  const put = (body) => accountSync(request("sync", "PUT", body, a.token), env);
+  assert.equal(
+    (await put({ vault, revision: 0, user_id: b.user.id })).status,
+    200,
+  );
+  assert.equal(
+    (
+      await (
+        await accountSync(request("sync", "GET", undefined, b.token), env)
+      ).json()
+    ).vault,
     null,
   );
   assert.deepEqual(
-    (await (await accountSync(req(), env, auth())).json()).vault,
+    (
+      await (
+        await accountSync(request("sync", "GET", undefined, a.token), env)
+      ).json()
+    ).vault,
     vault,
   );
+  assert.equal((await put({ vault, revision: 0 })).status, 409);
+  assert.equal((await put({ vault, revision: 1 })).status, 200);
+  assert.equal((await put({ vault, revision: 1 })).status, 409);
   assert.equal(
-    (await accountSync(req("PUT", { vault, revision: 0 }), env, auth())).status,
-    409,
+    (await put({ vault: { cookies: "secret" }, revision: 2 })).status,
+    400,
   );
-  assert.equal(
-    (await accountSync(req("PUT", { vault, revision: 1 }), env, auth())).status,
-    200,
-  );
-  assert.equal(
-    (await accountSync(req("PUT", { vault, revision: 1 }), env, auth())).status,
-    409,
-  );
-});
-test("plaintext and oversized backups are rejected", async () => {
-  const { env } = setup();
   assert.equal(
     (
-      await accountSync(
-        req("PUT", { vault: { cookies: "secret" }, revision: 0 }),
+      await put({
+        vault: { ...vault, ciphertext: "a".repeat(1500001) },
+        revision: 2,
+      })
+    ).status,
+    413,
+  );
+  assert.equal((await put(null)).status, 400);
+  db.close();
+});
+test("auth validates optional email, origin, invalid sessions and rate limits repeated guesses", async () => {
+  const { env, db } = setup();
+  assert.equal(
+    (
+      await accountAuth(
+        request("register", "POST", {
+          username: "valid_name",
+          proof,
+          email: "bad-email",
+        }),
         env,
-        auth(),
       )
     ).status,
     400,
   );
   assert.equal(
     (
-      await accountSync(
-        req("PUT", {
-          vault: { ...vault, ciphertext: "a".repeat(1_500_001) },
-          revision: 0,
-        }),
+      await accountAuth(
+        request(
+          "register",
+          "POST",
+          { username: "valid_name", proof },
+          undefined,
+          "https://evil.example",
+        ),
         env,
-        auth(),
       )
     ).status,
-    413,
+    403,
+  );
+  const a = await register(env, "limited_user");
+  const email = await accountAuth(
+    request("register", "POST", {
+      username: "email_user",
+      proof,
+      email: "fixture@example.invalid",
+    }),
+    env,
+  );
+  assert.equal(email.status, 201);
+  assert.equal(
+    db.prepare("SELECT email FROM accounts WHERE username='email_user'").get()
+      .email,
+    "fixture@example.invalid",
+  );
+  assert.equal(
+    (await accountSync(request("sync", "GET", undefined, "invalid"), env))
+      .status,
+    401,
+  );
+  for (let i = 0; i < 14; i++)
+    assert.equal(
+      (
+        await accountAuth(
+          request("login", "POST", {
+            username: "limited_user",
+            proof: "b".repeat(64),
+          }),
+          env,
+        )
+      ).status,
+      401,
+    );
+  assert.equal(
+    (
+      await accountAuth(
+        request("login", "POST", { username: "limited_user", proof }),
+        env,
+      )
+    ).status,
+    429,
+  );
+  assert.equal(
+    (await accountSync(request("sync", "GET", undefined, a.token), env)).status,
+    200,
+  );
+  db.close();
+});
+test("password verifiers reject incorrect proofs and use independent random salts", async () => {
+  const first = await makeVerifier(proof, "1".repeat(32));
+  assert.notEqual(first, await makeVerifier(proof, "2".repeat(32)));
+  assert.equal(await checkVerifier(proof, "1".repeat(32), first), true);
+  assert.equal(
+    await checkVerifier("b".repeat(64), "1".repeat(32), first),
+    false,
   );
 });

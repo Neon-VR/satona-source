@@ -2,11 +2,15 @@ import { connect } from "cloudflare:sockets";
 import { serveWisp } from "./wisp.js";
 import { relayHttp } from "./http-relay.js";
 import { accountSync } from "./account-sync.js";
+import { gamePage } from "./game-page.js";
+import { accountAuth } from "./account-auth.js";
 
 export default {
   fetch(request, env) {
     const path = new URL(request.url).pathname;
+    if (path === "/game") return gamePage(request, env);
     if (path === "/account/sync") return accountSync(request, env);
+    if (path.startsWith("/account/")) return accountAuth(request, env);
     if (path === "/fetch") return relayHttp(request, env);
     if (path === "/healthz") {
       return Response.json({ service: "satona-wisp-browser-20261005", protocol: "Wisp v1 TCP", transports: ["epoxy", "libcurl"], udp: false, maxStreams: 6 });

@@ -16,6 +16,7 @@ export default function Account() {
     void checkAccountService();
   }, []);
   const [create, setCreate] = useState(false),
+    [username, setUsername] = useState(""),
     [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [sessions, setSessions] = useState(true);
@@ -57,7 +58,7 @@ export default function Account() {
         )}
         {state.unlocked ? (
           <>
-            <strong className="account-email">{state.email}</strong>
+            <strong className="account-email">{state.username}</strong>
             <div className="account-facts">
               <span>
                 Cloud backup <b>Encrypted</b>
@@ -112,20 +113,44 @@ export default function Account() {
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
-                await signIntoAccount(email, password, sessions, create);
+                await signIntoAccount(
+                  username,
+                  password,
+                  sessions,
+                  create,
+                  email,
+                );
                 setPassword("");
               }}
             >
               <label>
-                Email
+                Username
                 <input
                   required
-                  type="email"
                   autoComplete="username"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  minLength={3}
+                  maxLength={24}
+                  pattern="[A-Za-z0-9_]{3,24}"
+                  title="3–24 letters, numbers, or underscores"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                 />
               </label>
+              {create && (
+                <label>
+                  Email (optional)
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    maxLength={254}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  <small>
+                    You can leave this empty. Sign in with your username.
+                  </small>
+                </label>
+              )}
               <label>
                 Password
                 <input
@@ -172,8 +197,8 @@ export default function Account() {
                 : "New to Satona? Create an account"}
             </button>
             <p className="account-note">
-              Your password also unlocks your backup. A password reset cannot
-              recover data encrypted with the old password.
+              Keep your username and password safe. Your password unlocks your
+              encrypted backup; password recovery is not available yet.
             </p>
           </>
         )}

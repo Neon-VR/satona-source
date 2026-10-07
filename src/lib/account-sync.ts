@@ -1,4 +1,8 @@
-import { accountClient } from "./account-client";
+import {
+  authenticateAccount,
+  endAccountSession,
+  getAccountToken,
+} from "./account-client";
 import {
   deriveVaultKey,
   encryptVault,
@@ -32,7 +36,7 @@ type Snapshot = {
   webStorage?: Record<string, string>;
 };
 type State = {
-  email: string;
+  username: string;
   status: string;
   busy: boolean;
   unlocked: boolean;
@@ -42,7 +46,7 @@ type State = {
   available: boolean;
 };
 let state: State = {
-  email: "",
+  username: "",
   status: "Sign in to take your Satona data with you.",
   busy: false,
   unlocked: false,
@@ -76,7 +80,7 @@ export async function checkAccountService() {
       cache: "no-store",
       signal: AbortSignal.timeout(10000),
     });
-    if (!result.ok || !accountClient) throw new Error();
+    if (!result.ok) throw new Error();
     update({
       available: true,
       status: "Sign in to take your Satona data with you.",
@@ -90,12 +94,12 @@ export async function checkAccountService() {
   }
 }
 async function api(method: "GET" | "PUT", body?: unknown) {
-  const { data } = await accountClient!.auth.getSession();
-  if (!data.session) throw new Error("Sign in again to sync your account.");
+  const token = getAccountToken();
+  if (!token) throw new Error("Sign in again to sync your account.");
   const response = await fetch(endpoint, {
     method,
     headers: {
-      Authorization: `Bearer ${data.session.access_token}`,
+      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body: body ? JSON.stringify(body) : undefined,
@@ -253,12 +257,12 @@ export async function restoreAccount() {
   }
 }
 export async function signIntoAccount(
-  email: string,
+  username: string,
   password: string,
   includeSessions: boolean,
   create = false,
+  email = "",
 ) {
-  if (!accountClient) throw new Error("Accounts are not configured.");
   if (!state.available) return;
   if (state.busy) return;
   update({
@@ -268,18 +272,12 @@ export async function signIntoAccount(
       : "Opening your encrypted backup…",
   });
   try {
-    const result = create
-      ? await accountClient.auth.signUp({ email, password })
-      : await accountClient.auth.signInWithPassword({ email, password });
-    if (result.error) throw result.error;
-    if (!result.data.session) {
-      update({
-        status:
-          "Check your email to confirm your account, then return here and sign in.",
-      });
-      return;
-    }
-    const nextUser = result.data.user!;
+    const nextUser = await authenticateAccount(
+      username,
+      password,
+      create,
+      email,
+    );
     const nextKey = await deriveVaultKey(password, nextUser.id);
     const backup = await api("GET");
     update({ includeSessions });
@@ -292,7 +290,7 @@ export async function signIntoAccount(
     revision = backup.revision;
     lastSnapshot = backup.vault ? JSON.stringify(await capture()) : "";
     update({
-      email: nextUser.email || email,
+      username: nextUser.username,
       unlocked: true,
       conflict: false,
       lastSync: backup.updatedAt || "",
@@ -305,9 +303,9 @@ export async function signIntoAccount(
   } catch (error) {
     key = null;
     userId = "";
-    await accountClient.auth.signOut();
+    await endAccountSession();
     update({
-      email: "",
+      username: "",
       unlocked: false,
       status: error instanceof Error ? error.message : "Could not sign in.",
     });
@@ -322,7 +320,7 @@ export async function signOutAccount() {
   clearInterval(timer);
   key = null;
   try {
-    await accountClient?.auth.signOut();
+    await endAccountSession();
     for (const name of [
       ...preferenceKeys,
       ...Object.keys(localStorage).filter(isWebsiteKey),
@@ -335,7 +333,7 @@ export async function signOutAccount() {
     revision = 0;
     lastSnapshot = "";
     update({
-      email: "",
+      username: "",
       unlocked: false,
       lastSync: "",
       conflict: false,
@@ -345,7 +343,7 @@ export async function signOutAccount() {
     window.dispatchEvent(new Event("satona-account-restored"));
   } catch {
     update({
-      email: "",
+      username: "",
       unlocked: false,
       status:
         "Signed out. Close Satona tabs to finish clearing active website sessions.",

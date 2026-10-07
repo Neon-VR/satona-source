@@ -1195,3 +1195,15 @@ html[data-motion="off"] .launch-screen * {
   animation: none !important;
   transition: none !important;
 }
+
+
+.browser-controls { display: contents; }
+.satona-browser-shell:fullscreen { width: 100vw; height: 100vh; margin: 0 !important; padding: 0; border: 0; border-radius: 0; background: #100d1a; display: flex; flex-direction: column; }
+.satona-browser-shell:fullscreen > .satona-content { width: 100%; height: 100%; flex: 1; padding: 0; }
+.satona-browser-shell:fullscreen .browser-frame-container,
+.satona-browser-shell:fullscreen .browser-frame { width: 100%; height: 100%; border-radius: 0; }
+.satona-browser-shell:fullscreen .browser-controls { display: block; position: absolute; z-index: 120; inset: 0 0 auto; background: #171122; box-shadow: 0 14px 30px #0008; transform: translateY(-105%); visibility: hidden; transition: transform 180ms ease, visibility 180ms; }
+.satona-browser-shell:fullscreen .browser-controls.controls-revealed { transform: translateY(0); visibility: visible; }
+.satona-browser-shell:fullscreen .fullscreen-reveal-edge { position: absolute; z-index: 121; top: 0; left: 0; width: 100%; height: 8px; border: 0; padding: 0; margin: 0; background: transparent; cursor: default; }
+.satona-browser-shell:fullscreen .fullscreen-reveal-edge:focus-visible { outline: 2px solid #c4a1ff; outline-offset: -2px; }
+@media (prefers-reduced-motion: reduce) { .satona-browser-shell:fullscreen .browser-controls { transition: none; } }

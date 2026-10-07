@@ -1,42 +1,26 @@
+import { authenticate, accountHeaders } from "./account-auth.js";
 const MAX_BYTES = 1_500_000;
-export async function accountSync(request, env, fetcher = fetch) {
-  const origin = request.headers.get("Origin");
-  if (!origin || !env.ALLOWED_ORIGINS.split(",").includes(origin))
-    return new Response("Origin not allowed", { status: 403 });
-  const headers = {
-    "Access-Control-Allow-Origin": origin,
-    Vary: "Origin",
-    "Cache-Control": "no-store",
-    "Access-Control-Allow-Methods": "GET, HEAD, PUT, OPTIONS",
-    "Access-Control-Allow-Headers": "Authorization, Content-Type",
-  };
+export async function accountSync(request, env, verifyUser = authenticate) {
+  const headers = accountHeaders(request, env);
+  if (!headers) return new Response("Origin not allowed", { status: 403 });
   const reply = (body, status = 200) =>
     Response.json(body, { status, headers });
   if (request.method === "OPTIONS")
     return new Response(null, { status: 204, headers });
   if (!["GET", "HEAD", "PUT"].includes(request.method))
     return reply({ error: "Method not allowed" }, 405);
-  if (!env.ACCOUNTS || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY)
+  if (!env.ACCOUNTS)
     return reply({ error: "Account sync is not configured yet." }, 503);
   if (request.method === "HEAD")
     return new Response(null, { status: 204, headers });
-  const authorization = request.headers.get("Authorization") || "";
-  if (!/^Bearer [\w.-]{20,4096}$/.test(authorization))
-    return reply({ error: "Sign in to sync." }, 401);
   let user;
   try {
-    const verified = await fetcher(`${env.SUPABASE_URL}/auth/v1/user`, {
-      headers: { Authorization: authorization, apikey: env.SUPABASE_ANON_KEY },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!verified.ok)
-      return reply({ error: "Your session expired. Sign in again." }, 401);
-    user = await verified.json();
+    user = await verifyUser(request, env);
   } catch {
     return reply({ error: "Account service is temporarily unavailable." }, 503);
   }
-  if (!/^[a-f0-9-]{36}$/i.test(user?.id || "") || !user.email_confirmed_at)
-    return reply({ error: "Confirm your email before syncing." }, 403);
+  if (!user)
+    return reply({ error: "Your session expired. Sign in again." }, 401);
   try {
     if (request.method === "GET") {
       const row = await env.ACCOUNTS.prepare(
@@ -83,9 +67,9 @@ export async function accountSync(request, env, fetcher = fetch) {
     } catch {
       return reply({ error: "Invalid backup." }, 400);
     }
-    const v = input.vault;
+    const v = input?.vault;
     if (
-      !Number.isSafeInteger(input.revision) ||
+      !Number.isSafeInteger(input?.revision) ||
       input.revision < 0 ||
       v?.version !== 1 ||
       !/^[A-Za-z0-9+/]{16}$/.test(v.iv || "") ||

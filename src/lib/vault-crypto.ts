@@ -1,5 +1,27 @@
 export type EncryptedVault = { version: 1; iv: string; ciphertext: string };
 const utf8 = new TextEncoder();
+export async function deriveAuthProof(password: string, username: string) {
+  const material = await crypto.subtle.importKey(
+    "raw",
+    utf8.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt: utf8.encode(`satona-login-v1:${username.trim().toLowerCase()}`),
+      iterations: 600000,
+    },
+    material,
+    256,
+  );
+  return Array.from(new Uint8Array(bits), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+}
 function base64(bytes: Uint8Array) {
   let text = "";
   for (let i = 0; i < bytes.length; i += 8192)

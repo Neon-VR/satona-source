@@ -55,6 +55,7 @@ export default function Games() {
   const [lumin, setLumin] = useState<Entry[]>([]);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
+  const [luminTotal, setLuminTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [luminLoading, setLuminLoading] = useState(true);
   const [gnError, setGnError] = useState("");
@@ -67,11 +68,12 @@ export default function Games() {
   );
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [selected, setSelected] = useState<Entry | null>(null);
-  const [html, setHtml] = useState("");
   const [gameUrl, setGameUrl] = useState("");
   const [playError, setPlayError] = useState("");
   const [retry, setRetry] = useState(0);
   const iframe = useRef<HTMLIFrameElement>(null);
+  const nextShelf = useRef<HTMLDivElement>(null);
+  const nextLibraryShelf = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -99,11 +101,16 @@ export default function Games() {
       setSearch(query);
       setPage(1);
       setLumin([]);
+      setLuminTotal(null);
     }, 300);
     return () => clearTimeout(timer);
   }, [query, search]);
   useEffect(() => {
     let active = true;
+    if (source === "gn-math" || (page > 1 && (luminError || page > pages))) {
+      setLuminLoading(false);
+      return;
+    }
     setLuminLoading(true);
     setLuminError("");
     void loadLumin()
@@ -129,6 +136,7 @@ export default function Games() {
               ],
         );
         setPages(result.pages);
+        setLuminTotal(result.total);
       })
       .catch(() => {
         if (active)
@@ -142,12 +150,10 @@ export default function Games() {
     return () => {
       active = false;
     };
-  }, [page, search, retry]);
+  }, [page, search, retry, source]);
   useEffect(() => {
     if (!selected) return;
     let active = true;
-    const abort = new AbortController();
-    setHtml("");
     setGameUrl("");
     setPlayError("");
     void (async () => {
@@ -158,27 +164,14 @@ export default function Games() {
           if (active) setGameUrl(result.url);
           return;
         }
-        const path = selected.assetFolder
-          ? `${selected.assetFolder}/index.html`
-          : selected.htmlFile;
-        const base = selected.assetFolder
-          ? `https://cdn.jsdelivr.net/gh/gn-math/assets@main/${selected.assetFolder}/`
-          : `https://raw.githubusercontent.com/gn-math/html/main/${selected.htmlFile}`;
-        const url = `https://raw.githubusercontent.com/gn-math/${selected.assetFolder ? "assets" : "html"}/main/${path}`;
-        const response = await fetch(url, { signal: abort.signal });
-        if (!response.ok) throw new Error();
-        const text = await response.text();
-        const withBase = /<base\b/i.test(text)
-          ? text
-          : text.replace(
-              /<head\b[^>]*>/i,
-              (head) => `${head}<base href="${base}">`,
-            );
+        const params = new URLSearchParams(
+          selected.assetFolder
+            ? { folder: selected.assetFolder }
+            : { file: selected.htmlFile },
+        );
         if (active)
-          setHtml(
-            withBase === text && !/<base\b/i.test(text)
-              ? `<base href="${base}">${text}`
-              : withBase,
+          setGameUrl(
+            `https://satona-wisp-browser-20261005.satona.workers.dev/game?${params}`,
           );
       } catch {
         if (active)
@@ -189,7 +182,6 @@ export default function Games() {
     })();
     return () => {
       active = false;
-      abort.abort();
     };
   }, [selected]);
   const filtered = useMemo(
@@ -235,7 +227,57 @@ export default function Games() {
   ]);
   const hasMore =
     (source !== "LuminSDK" && filtered.length > page * 24) ||
-    (source !== "gn-math" && page < pages);
+    (source !== "gn-math" && !luminError && page < pages);
+  const catalogBusy =
+    (source !== "LuminSDK" && loading) ||
+    (source !== "gn-math" && luminLoading);
+  const catalogTotal = onlyFavorites
+    ? games.length
+    : (source === "LuminSDK" ? 0 : filtered.length) +
+      (source === "gn-math" ? 0 : (luminTotal ?? 0));
+  const totalLabel =
+    catalogTotal.toLocaleString() +
+    (!onlyFavorites &&
+    source !== "gn-math" &&
+    luminTotal === null &&
+    !luminError
+      ? " + …"
+      : "");
+  useEffect(() => {
+    const targets = [nextShelf.current, nextLibraryShelf.current].filter(
+      (target): target is HTMLDivElement => !!target,
+    );
+    if (
+      !targets.length ||
+      selected ||
+      onlyFavorites ||
+      !hasMore ||
+      catalogBusy ||
+      query !== search
+    )
+      return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          observer.disconnect();
+          setPage((current) => current + 1);
+        }
+      },
+      { rootMargin: "250px 0px" },
+    );
+    targets.forEach((target) => observer.observe(target));
+    return () => observer.disconnect();
+  }, [
+    selected,
+    onlyFavorites,
+    hasMore,
+    catalogBusy,
+    page,
+    query,
+    search,
+    source,
+    view,
+  ]);
   function play(game: Entry) {
     const next = [
       game,
@@ -333,13 +375,12 @@ export default function Games() {
           <p className="source-error" role="alert">
             {playError}
           </p>
-        ) : html || gameUrl ? (
+        ) : gameUrl ? (
           <iframe
             ref={iframe}
             className="game-player-frame"
             title={selected.name}
-            src={gameUrl || undefined}
-            srcDoc={html || undefined}
+            src={gameUrl}
             sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms allow-popups"
             allow="fullscreen; autoplay; gamepad; pointer-lock"
             allowFullScreen
@@ -387,6 +428,8 @@ export default function Games() {
             onChange={(e) => {
               setSource(e.target.value);
               setFocused(null);
+              setPage(1);
+              setLumin([]);
             }}
           >
             <option>All</option>
@@ -425,7 +468,7 @@ export default function Games() {
                 setOnlyFavorites(false);
               }}
             >
-              ▦ All games <span>{gn.length + lumin.length}</span>
+              ▦ All games <span>{totalLabel}</span>
             </button>
             <p>✓ Ready to play</p>
             <div>
@@ -439,6 +482,11 @@ export default function Games() {
                   <span>{game.name}</span>
                 </button>
               ))}
+              {hasMore && !onlyFavorites && (
+                <div ref={nextLibraryShelf} className="steam-scroll-status">
+                  {catalogBusy ? "Loading…" : "Scroll for more"}
+                </div>
+              )}
             </div>
           </aside>
         )}
@@ -448,7 +496,12 @@ export default function Games() {
             <div className="steam-notice" role="status">
               {source !== "LuminSDK" && gnError}{" "}
               {source !== "gn-math" && luminError}{" "}
-              <button onClick={() => setRetry(retry + 1)}>
+              <button
+                onClick={() => {
+                  setPage(1);
+                  setRetry(retry + 1);
+                }}
+              >
                 Retry catalogs
               </button>
             </div>
@@ -527,7 +580,7 @@ export default function Games() {
                   : view === "library"
                     ? "ALL GAMES"
                     : "EXPLORE THE CATALOG"}{" "}
-              <span>{ordered.length}</span>
+              <span>{totalLabel}</span>
             </h2>
             <select
               aria-label="Sort games"
@@ -564,13 +617,11 @@ export default function Games() {
             </div>
           )}
           {hasMore && !onlyFavorites && (
-            <button
-              className="steam-load-more"
-              disabled={luminLoading && source !== "gn-math"}
-              onClick={() => setPage(page + 1)}
-            >
-              {luminLoading ? "Loading…" : "Load more games"}
-            </button>
+            <div ref={nextShelf} className="steam-scroll-status" role="status">
+              {catalogBusy
+                ? "Loading more games…"
+                : "More games appear as you scroll"}
+            </div>
           )}
         </main>
       </div>
