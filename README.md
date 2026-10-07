@@ -30,7 +30,7 @@ A local Node relay can use `ws://127.0.0.1:4000/`.
   Apply `CHAT_MODERATION.sql` in Supabase to enforce the filter at the database too;
   a browser-only filter does not prevent direct API submissions.
 
-Preferences, bookmarks, notes, and history are stored on the current device.
+Satona Steam provides Store and Library views with free, ready-to-play catalog games, favorites, and recent games. Preferences, bookmarks, notes, and history are stored on the current device. The Satona Account UI and encrypted backup API are implemented; cloud sync remains unavailable until provisioning and live validation described in ACCOUNT_SETUP.md are complete.
 
 ## Relay and browser compatibility
 
@@ -67,7 +67,7 @@ in this mode. `thread-check.html` is an optional diagnostic, not an app feature.
 ## Checks
 
 ```
-node --test --test-isolation=none scripts/features.test.mjs scripts/transport.test.mjs wisp-worker/test/*.test.js
+node --test --test-isolation=none scripts/features.test.mjs scripts/transport.test.mjs scripts/vault.test.mjs wisp-worker/test/*.test.js
 pnpm build
 ```
 
@@ -96,3 +96,9 @@ For optional npm asset distribution, run
 Review `npm pack --dry-run` in `cdn-package/`, then publish with npm authentication
 and 2FA. UNPKG and jsDelivr serve the published files; the full site still requires
 an HTTPS host for the same-origin service worker.
+
+
+
+The Satona Steam build is prepared in `cdn-package/`, including
+`index-steam-20261007.html`. It has not been uploaded: the Bunny dashboard session
+expired. After upload, update the custom 404 entry and purge as above.

@@ -10,6 +10,15 @@ export type DesktopApp = {
 };
 export const desktopApps: DesktopApp[] = [
   {
+    id: "account",
+    name: "Satona Account",
+    icon: "lock",
+    color: "#cab1ff",
+    description: "Encrypted browser backups across your devices.",
+    category: "Essentials",
+    builtin: true,
+  },
+  {
     id: "browser",
     name: "Satona Browser",
     icon: "globe",
@@ -20,9 +29,9 @@ export const desktopApps: DesktopApp[] = [
   },
   {
     id: "games",
-    name: "Arcade",
-    icon: "games",
-    color: "#8be8ba",
+    name: "Satona Steam",
+    icon: "steam",
+    color: "#66c0f4",
     description: "Discover games from GN-Math and LuminSDK.",
     category: "Play",
     builtin: true,

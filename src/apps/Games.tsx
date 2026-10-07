@@ -3,6 +3,7 @@ import Icon from "../components/Icon";
 import { loadGames, type Game } from "../lib/gn-games";
 import { loadLumin } from "../lib/lumin";
 import { readPreference, savePreference } from "../lib/preferences";
+import "./steam.css";
 type Entry = Game & {
   source: "gn-math" | "LuminSDK";
   imageToken?: string;
@@ -15,6 +16,11 @@ function Cover({ game }: { game: Entry }) {
       : "",
   );
   useEffect(() => {
+    setSrc(
+      game.coverFile
+        ? `https://raw.githubusercontent.com/gn-math/covers/main/${game.coverFile}`
+        : "",
+    );
     if (!game.imageToken) return;
     let active = true;
     void loadLumin()
@@ -26,7 +32,7 @@ function Cover({ game }: { game: Entry }) {
     return () => {
       active = false;
     };
-  }, [game.imageToken]);
+  }, [game.imageToken, game.coverFile]);
   return src ? (
     <img src={src} alt="" loading="lazy" onError={() => setSrc("")} />
   ) : (
@@ -36,6 +42,12 @@ function Cover({ game }: { game: Entry }) {
   );
 }
 export default function Games() {
+  const [view, setView] = useState<"store" | "library">("store");
+  const [focused, setFocused] = useState<Entry | null>(null);
+  const [recent, setRecent] = useState(() =>
+    readPreference<Entry[]>("satona.recent-games", []),
+  );
+  const [sort, setSort] = useState("featured");
   const [source, setSource] = useState("All");
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
@@ -224,6 +236,81 @@ export default function Games() {
   const hasMore =
     (source !== "LuminSDK" && filtered.length > page * 24) ||
     (source !== "gn-math" && page < pages);
+  function play(game: Entry) {
+    const next = [
+      game,
+      ...recent.filter(
+        (item) => `${item.source}:${item.id}` !== `${game.source}:${game.id}`,
+      ),
+    ].slice(0, 16);
+    setRecent(next);
+    savePreference("satona.recent-games", next);
+    setSelected(game);
+  }
+  function showDetails(game: Entry) {
+    setFocused(game);
+    setView("library");
+    setQuery("");
+    setSearch("");
+    setPage(1);
+  }
+  function favorite(game: Entry) {
+    const key = `${game.source}:${game.id}`;
+    const next = favorites.includes(key)
+      ? favorites.filter((id) => id !== key)
+      : [...favorites, key];
+    const records = [
+      ...savedGames.filter((item) => `${item.source}:${item.id}` !== key),
+      ...(next.includes(key) ? [game] : []),
+    ];
+    setFavorites(next);
+    setSavedGames(records);
+    savePreference("satona.game-favorites", next);
+    savePreference("satona.favorite-games", records);
+  }
+  const ordered =
+    sort === "name"
+      ? [...games].sort((a, b) => a.name.localeCompare(b.name))
+      : games;
+  const featured =
+    focused ||
+    games.find((game) => game.coverFile && !/^Game \d+/.test(game.name)) ||
+    games[0];
+  const card = (game: Entry) => (
+    <article className="steam-card" key={`${game.source}:${game.id}`}>
+      <button
+        className="steam-card-art"
+        onClick={() => {
+          showDetails(game);
+        }}
+        aria-label={`View ${game.name}`}
+      >
+        <Cover game={game} />
+        <span>✓ IN LIBRARY</span>
+      </button>
+      <div className="steam-card-info">
+        <h3>{game.name}</h3>
+        <small>
+          {game.source}
+          {game.category ? ` · ${game.category}` : ""}
+        </small>
+        <div>
+          <b>Free to Play</b>
+          <button
+            className="steam-star"
+            aria-label={`Favorite ${game.name}`}
+            aria-pressed={favorites.includes(`${game.source}:${game.id}`)}
+            onClick={() => favorite(game)}
+          >
+            {favorites.includes(`${game.source}:${game.id}`) ? "★" : "☆"}
+          </button>
+          <button className="steam-play-small" onClick={() => play(game)}>
+            ▶ Play
+          </button>
+        </div>
+      </div>
+    </article>
+  );
   if (selected)
     return (
       <section className="section-page game-player-page">
@@ -232,7 +319,7 @@ export default function Games() {
             className="secondary-button"
             onClick={() => setSelected(null)}
           >
-            ← All games
+            ← Satona Steam
           </button>
           <strong>{selected.name}</strong>
           <button
@@ -263,151 +350,236 @@ export default function Games() {
       </section>
     );
   return (
-    <section className="section-page games-page">
-      <div className="section-heading">
-        <div>
-          <span className="section-kicker">PRESS PLAY ON SOMETHING GOOD</span>
-          <h1>
-            The arcade<span className="title-dot">.</span>
-          </h1>
-          <p>Two libraries. Endless rabbit holes. Zero installs.</p>
+    <section className="satona-steam">
+      <header className="steam-client-header">
+        <div className="steam-brand">
+          <Icon name="steam" size={30} />
+          <span>
+            SATONA <b>STEAM</b>
+          </span>
+          <small>COMMUNITY EDITION</small>
         </div>
-        <div className="library-search">
-          <Icon name="search" size={17} />
-          <input
-            aria-label="Search games"
-            placeholder="Find your next favorite…"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </div>
-      </div>
-      <div className="library-controls">
-        <label className="game-source-label">
-          GAME SOURCE
+        <nav aria-label="Satona Steam views">
+          <button
+            className={view === "store" ? "active" : ""}
+            onClick={() => {
+              setView("store");
+              setOnlyFavorites(false);
+            }}
+          >
+            STORE
+          </button>
+          <button
+            className={view === "library" ? "active" : ""}
+            onClick={() => setView("library")}
+          >
+            LIBRARY
+          </button>
+          <span>ALL YOUR GAMES. READY TO PLAY.</span>
+        </nav>
+      </header>
+      <div className="steam-toolbar">
+        <label>
+          Source{" "}
           <select
             aria-label="Game source"
             value={source}
-            onChange={(event) => setSource(event.target.value)}
+            onChange={(e) => {
+              setSource(e.target.value);
+              setFocused(null);
+            }}
           >
             <option>All</option>
             <option>LuminSDK</option>
             <option>gn-math</option>
           </select>
         </label>
+        <div className="steam-search">
+          <input
+            aria-label="Search games"
+            placeholder={
+              view === "store" ? "Search the store" : "Search your library"
+            }
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <Icon name="search" />
+        </div>
         <button
-          className={`filter-chip ${onlyFavorites ? "active" : ""}`}
+          className={onlyFavorites ? "active" : ""}
           onClick={() => setOnlyFavorites(!onlyFavorites)}
         >
-          ☆ Favorites
+          ★ Favorites <span>{favorites.length}</span>
         </button>
-        <button
-          className="filter-chip"
-          disabled={!games.length}
-          onClick={() =>
-            setSelected(games[Math.floor(Math.random() * games.length)])
-          }
-        >
-          Surprise me ↗
-        </button>
-        <span>{games.length} games shown</span>
       </div>
-      {source !== "LuminSDK" && gnError && (
-        <p className="source-error">
-          {gnError}{" "}
-          <button
-            className="secondary-button"
-            onClick={() => setRetry(retry + 1)}
-          >
-            Retry
-          </button>
-        </p>
-      )}
-      {source !== "gn-math" && luminError && (
-        <p className="source-error">
-          {luminError}{" "}
-          <button
-            className="secondary-button"
-            onClick={() => setRetry(retry + 1)}
-          >
-            Retry
-          </button>
-        </p>
-      )}
-      <div className="games-grid">
-        {games.map((game) => {
-          const key = `${game.source}:${game.id}`;
-          return (
-            <article className="game-card" key={key}>
-              <div className="game-thumbnail">
-                <Cover game={game} />
+      <div
+        className={`steam-layout ${view === "library" ? "with-library" : ""}`}
+      >
+        {view === "library" && (
+          <aside className="steam-library-sidebar">
+            <h3>YOUR COLLECTION</h3>
+            <button
+              className="steam-library-home"
+              onClick={() => {
+                setFocused(null);
+                setOnlyFavorites(false);
+              }}
+            >
+              ▦ All games <span>{gn.length + lumin.length}</span>
+            </button>
+            <p>✓ Ready to play</p>
+            <div>
+              {ordered.map((game) => (
                 <button
-                  className={`game-favorite ${favorites.includes(key) ? "active" : ""}`}
-                  aria-label={`Favorite ${game.name}`}
-                  aria-pressed={favorites.includes(key)}
-                  onClick={() => {
-                    const next = favorites.includes(key)
-                      ? favorites.filter((id) => id !== key)
-                      : [...favorites, key];
-                    setFavorites(next);
-                    savePreference("satona.game-favorites", next);
-                    const records = next.includes(key)
-                      ? [
-                          ...savedGames.filter(
-                            (item) => `${item.source}:${item.id}` !== key,
-                          ),
-                          game,
-                        ]
-                      : savedGames.filter(
-                          (item) => `${item.source}:${item.id}` !== key,
-                        );
-                    setSavedGames(records);
-                    savePreference("satona.favorite-games", records);
-                  }}
+                  key={`${game.source}:${game.id}`}
+                  className={featured === game ? "active" : ""}
+                  onClick={() => showDetails(game)}
                 >
-                  ☆
+                  <Cover game={game} />
+                  <span>{game.name}</span>
                 </button>
-                <button
-                  className="game-play-button"
-                  onClick={() => setSelected(game)}
-                >
-                  <Icon name="play" size={15} />
-                  Play
-                </button>
+              ))}
+            </div>
+          </aside>
+        )}
+        <main className="steam-content">
+          {((source !== "LuminSDK" && gnError) ||
+            (source !== "gn-math" && luminError)) && (
+            <div className="steam-notice" role="status">
+              {source !== "LuminSDK" && gnError}{" "}
+              {source !== "gn-math" && luminError}{" "}
+              <button onClick={() => setRetry(retry + 1)}>
+                Retry catalogs
+              </button>
+            </div>
+          )}
+          {featured && !search && !onlyFavorites && (
+            <section className="steam-feature">
+              <div className="steam-feature-art">
+                <Cover
+                  key={`${featured.source}:${featured.id}`}
+                  game={featured}
+                />
               </div>
-              <h2 className="game-card-title">{game.name}</h2>
-              <small>
-                {game.source}
-                {game.category ? ` · ${game.category}` : ""}
-              </small>
-            </article>
-          );
-        })}
+              <div className="steam-feature-copy">
+                <span>
+                  {view === "store"
+                    ? "FEATURED & RECOMMENDED"
+                    : "IN YOUR LIBRARY"}
+                </span>
+                <h1>{featured.name}</h1>
+                <p>
+                  {view === "store"
+                    ? "Your next great game is already here."
+                    : "Installed in your Satona library. Launch instantly."}
+                </p>
+                <div className="steam-tags">
+                  <span>{featured.source}</span>
+                  <span>Free to Play</span>
+                  <span>Browser game</span>
+                </div>
+                <button className="steam-play" onClick={() => play(featured)}>
+                  ▶ PLAY NOW
+                </button>
+                <small>✓ Ready to play · No download needed</small>
+              </div>
+            </section>
+          )}
+          {view === "store" && !search && !onlyFavorites && (
+            <div className="steam-value-banner">
+              <div>
+                <Icon name="steam" size={38} />
+                <span>
+                  <strong>Your entire library. On the house.</strong>
+                  <small>Every catalog game is free and ready to launch.</small>
+                </span>
+              </div>
+              <button onClick={() => setView("library")}>
+                Explore your library →
+              </button>
+            </div>
+          )}
+          {recent.length > 0 && !search && !onlyFavorites && (
+            <section className="steam-recent">
+              <h2>JUMP BACK IN</h2>
+              <div>
+                {recent.slice(0, 4).map((game) => (
+                  <button
+                    key={`${game.source}:${game.id}`}
+                    onClick={() => play(game)}
+                  >
+                    <Cover game={game} />
+                    <span>
+                      {game.name}
+                      <small>▶ Play again</small>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+          <div className="steam-shelf-heading">
+            <h2>
+              {onlyFavorites
+                ? "YOUR FAVORITES"
+                : search
+                  ? "SEARCH RESULTS"
+                  : view === "library"
+                    ? "ALL GAMES"
+                    : "EXPLORE THE CATALOG"}{" "}
+              <span>{ordered.length}</span>
+            </h2>
+            <select
+              aria-label="Sort games"
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+            >
+              <option value="featured">Featured order</option>
+              <option value="name">Name: A–Z</option>
+            </select>
+            <button
+              disabled={!games.length}
+              onClick={() =>
+                play(games[Math.floor(Math.random() * games.length)])
+              }
+            >
+              Surprise me ↗
+            </button>
+          </div>
+          <div className="steam-grid">{ordered.map(card)}</div>
+          {!games.length && (
+            <div className="steam-empty">
+              <Icon name="steam" size={48} />
+              <h2>
+                {(loading && source !== "LuminSDK") ||
+                (luminLoading && source !== "gn-math")
+                  ? "Loading your library…"
+                  : "No games found"}
+              </h2>
+              <p>
+                {onlyFavorites
+                  ? "Star a game to add it to this collection."
+                  : "Try another search or source."}
+              </p>
+            </div>
+          )}
+          {hasMore && !onlyFavorites && (
+            <button
+              className="steam-load-more"
+              disabled={luminLoading && source !== "gn-math"}
+              onClick={() => setPage(page + 1)}
+            >
+              {luminLoading ? "Loading…" : "Load more games"}
+            </button>
+          )}
+        </main>
       </div>
-      {!games.length && (
-        <div className="empty-library">
-          <h2>
-            {(source !== "LuminSDK" && loading) ||
-            (source !== "gn-math" && luminLoading)
-              ? "Opening the arcade…"
-              : "Nothing here yet"}
-          </h2>
-          <p>
-            {onlyFavorites
-              ? "Star a game to find it here."
-              : "Try a different search or game source."}
-          </p>
-        </div>
-      )}
-      {hasMore && !onlyFavorites && (
-        <button
-          className="secondary-button load-more"
-          disabled={luminLoading && source !== "gn-math"}
-          onClick={() => setPage(page + 1)}
-        >
-          Load more games
-        </button>
-      )}
+      <footer className="steam-status">
+        <span>● ALL GAMES READY TO PLAY</span>
+        <span>
+          GN-Math + LuminSDK · Community launcher, not affiliated with Valve
+        </span>
+      </footer>
     </section>
   );
 }

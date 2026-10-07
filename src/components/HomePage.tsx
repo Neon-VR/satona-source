@@ -10,8 +10,8 @@ const shortcuts: {
 }[] = [
   {
     id: "games",
-    label: "The arcade",
-    icon: "games",
+    label: "Satona Steam",
+    icon: "steam",
     detail: "Find your next favorite",
   },
   {

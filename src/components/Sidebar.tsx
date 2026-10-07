@@ -20,7 +20,7 @@ type Props = {
 const items: { id: Section; label: string; icon: string }[] = [
   { id: "home", label: "Home", icon: "home" },
   { id: "apps", label: "Apps", icon: "apps" },
-  { id: "games", label: "Games", icon: "games" },
+  { id: "games", label: "Satona Steam", icon: "steam" },
   { id: "cloud", label: "Cloud gaming", icon: "cloud" },
   { id: "movies", label: "Movies", icon: "movies" },
   { id: "music", label: "Music", icon: "music" },

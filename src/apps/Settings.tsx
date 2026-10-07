@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Account from "./Account";
 import {
   presetIcon,
   readPreference,
@@ -66,6 +67,10 @@ export default function Settings() {
       <p className="status-message" role="status">
         {status}
       </p>
+      <details className="settings-account">
+        <summary>Satona account & encrypted cloud sync</summary>
+        <Account />
+      </details>
       <div className="settings-grid">
         <section className="settings-card">
           <span className="settings-label">TAB APPEARANCE</span>

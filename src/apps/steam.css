@@ -1,0 +1,565 @@
+.satona-steam {
+  --steam-blue: #66c0f4;
+  --steam-ink: #c7d5e0;
+  color: var(--steam-ink);
+  background: #1b2838;
+  min-height: 100%;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+.satona-steam .steam-client-header {
+  background: #171d25;
+  padding: 20px 28px 0;
+  box-shadow: 0 3px 14px #0005;
+  z-index: 1;
+}
+.satona-steam .steam-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 2px;
+  color: #e8eef5;
+}
+.satona-steam .steam-brand small {
+  margin-left: auto;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #728493;
+}
+.satona-steam .steam-client-header nav {
+  display: flex;
+  gap: 25px;
+  align-items: center;
+  margin-top: 18px;
+}
+.satona-steam .steam-client-header nav button {
+  font-size: 21px;
+  font-weight: 700;
+  color: #dcdedf;
+  border: 0;
+  background: none;
+  padding: 0 0 17px;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+.satona-steam .steam-client-header nav button.active {
+  color: #1a9fff;
+  border-color: #1a9fff;
+}
+.satona-steam .steam-client-header nav > span {
+  margin-left: auto;
+  font-size: 9px;
+  letter-spacing: 1.4px;
+  color: #899aaa;
+}
+.satona-steam .steam-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 28px;
+  background: linear-gradient(90deg, #254563, #1e354b);
+  border-bottom: 1px solid #38516a;
+}
+.satona-steam .steam-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+}
+.satona-steam select {
+  background: #25394b;
+  color: #d9e7f3;
+  border: 1px solid #54738a;
+  border-radius: 2px;
+  padding: 9px;
+}
+.satona-steam .steam-search {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  background: #162431;
+  border: 1px solid #497187;
+  max-width: 410px;
+  flex: 1;
+}
+.satona-steam .steam-search input {
+  border: 0;
+  background: transparent;
+  color: white;
+  width: 100%;
+  padding: 11px 14px;
+  min-width: 0;
+  outline: none;
+}
+.satona-steam .steam-search svg {
+  color: #a5d9f4;
+  margin-right: 11px;
+}
+.satona-steam .steam-toolbar > button,
+.satona-steam .steam-shelf-heading > button {
+  background: #ffffff0c;
+  border: 1px solid #52697a;
+  color: #c7d5e0;
+  padding: 9px 12px;
+  cursor: pointer;
+}
+.satona-steam .steam-toolbar > button.active {
+  background: #2c6391;
+  color: white;
+}
+.satona-steam .steam-toolbar button span {
+  opacity: 0.65;
+  margin-left: 5px;
+}
+.satona-steam .steam-layout {
+  display: flex;
+  flex: 1;
+  min-height: 550px;
+}
+.satona-steam .steam-content {
+  padding: 28px;
+  width: 100%;
+  min-width: 0;
+  background: radial-gradient(ellipse at top, #264360 0, transparent 60%);
+}
+.satona-steam .steam-feature {
+  position: relative;
+  min-height: 335px;
+  display: flex;
+  align-items: center;
+  background: #111e2b;
+  overflow: hidden;
+  box-shadow: 0 8px 22px #0005;
+}
+.satona-steam .steam-feature-art {
+  position: absolute;
+  inset: 0 0 0 40%;
+  opacity: 0.8;
+}
+.satona-steam .steam-feature-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.satona-steam .steam-feature-art:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, #111e2b, transparent 75%),
+    linear-gradient(0deg, #111e2b80, transparent);
+}
+.satona-steam .steam-feature-copy {
+  position: relative;
+  max-width: 65%;
+  padding: 35px;
+}
+.satona-steam .steam-feature-copy > span {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #66c0f4;
+}
+.satona-steam .steam-feature h1 {
+  font-size: clamp(25px, 3.5vw, 43px);
+  line-height: 1.05;
+  color: white;
+  margin: 17px 0;
+  letter-spacing: -1px;
+  text-shadow: 0 2px 12px #000;
+}
+.satona-steam .steam-feature p {
+  font-size: 13px;
+  margin: 12px 0 20px;
+}
+.satona-steam .steam-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.satona-steam .steam-tags span {
+  background: #263e50;
+  color: #aac8dd;
+  font-size: 10px;
+  padding: 5px 7px;
+}
+.satona-steam .steam-play {
+  border: 0;
+  background: linear-gradient(100deg, #75b022, #568317);
+  color: white;
+  font-size: 17px;
+  padding: 12px 35px;
+  cursor: pointer;
+  box-shadow: 0 2px 10px #0004;
+}
+.satona-steam .steam-play:hover {
+  filter: brightness(1.2);
+}
+.satona-steam .steam-feature small {
+  display: block;
+  margin-top: 12px;
+  font-size: 10px;
+  color: #9eb586;
+}
+.satona-steam .steam-value-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(100deg, #20476b, #296d95);
+  padding: 23px;
+  margin: 22px 0 30px;
+  box-shadow: 0 5px 15px #0004;
+}
+.satona-steam .steam-value-banner > div {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.satona-steam .steam-value-banner strong {
+  display: block;
+  color: white;
+  font-size: 19px;
+  font-weight: 400;
+}
+.satona-steam .steam-value-banner small {
+  display: block;
+  font-size: 11px;
+  margin-top: 6px;
+}
+.satona-steam .steam-value-banner button {
+  background: #ffffff15;
+  border: 1px solid #77b5d1;
+  color: white;
+  padding: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.satona-steam .steam-shelf-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 28px 0 15px;
+}
+.satona-steam .steam-shelf-heading h2,
+.satona-steam .steam-recent h2 {
+  font-size: 13px;
+  letter-spacing: 1.6px;
+  color: #fff;
+  font-weight: 500;
+  margin-right: auto;
+}
+.satona-steam .steam-shelf-heading h2 span {
+  background: #39516a;
+  font-size: 10px;
+  padding: 3px 6px;
+  margin-left: 7px;
+}
+.satona-steam .steam-shelf-heading select,
+.satona-steam .steam-shelf-heading button {
+  font-size: 10px;
+}
+.satona-steam .steam-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 18px;
+}
+.satona-steam .steam-card {
+  background: linear-gradient(135deg, #27445d, #1d3448);
+  box-shadow: 0 3px 9px #0004;
+  min-width: 0;
+  transition:
+    transform 0.16s,
+    box-shadow 0.16s;
+}
+.satona-steam .steam-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px #0008;
+}
+.satona-steam .steam-card-art {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  display: block;
+  border: 0;
+  background: #132839;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+.satona-steam .steam-card-art img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+.satona-steam .steam-card-art > span:last-child {
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-size: 9px;
+  background: #417a9bcc;
+  padding: 5px 9px;
+  color: white;
+}
+.satona-steam .steam-card-info {
+  padding: 12px;
+}
+.satona-steam .steam-card-info h3 {
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #f0f5fc;
+  margin: 0 0 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.satona-steam .steam-card-info small {
+  font-size: 10px;
+  color: #84a9c2;
+}
+.satona-steam .steam-card-info > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 14px;
+}
+.satona-steam .steam-card-info b {
+  font-size: 11px;
+  font-weight: 400;
+  margin-right: auto;
+  color: #b4d28e;
+}
+.satona-steam .steam-star {
+  background: none;
+  border: 0;
+  color: #acc2d4;
+  font-size: 20px;
+  cursor: pointer;
+}
+.satona-steam .steam-star[aria-pressed="true"] {
+  color: #ffd36b;
+}
+.satona-steam .steam-play-small {
+  background: #4a7124;
+  color: #e5f3d7;
+  border: 0;
+  padding: 7px 11px;
+  cursor: pointer;
+  font-size: 10px;
+}
+.satona-steam .steam-load-more {
+  display: block;
+  margin: 30px auto 0;
+  border: 1px solid #56748b;
+  background: #2d4c63;
+  color: #e1f4ff;
+  padding: 13px 30px;
+  cursor: pointer;
+}
+.satona-steam .steam-empty {
+  text-align: center;
+  padding: 80px 15px;
+  color: #91b3cc;
+}
+.satona-steam .steam-notice {
+  padding: 15px;
+  border: 1px solid #7f6337;
+  background: #332c23;
+  font-size: 12px;
+  margin-bottom: 20px;
+}
+.satona-steam .steam-notice button {
+  border: 0;
+  padding: 5px 12px;
+  background: #59492b;
+  color: #fff;
+  cursor: pointer;
+}
+.satona-steam .steam-library-sidebar {
+  width: 205px;
+  flex-shrink: 0;
+  background: #20242b;
+  border-right: 1px solid #0e1720;
+  padding: 22px 10px;
+}
+.satona-steam .steam-library-sidebar h3 {
+  font-size: 10px;
+  letter-spacing: 1.3px;
+  padding: 0 7px;
+  color: #788996;
+}
+.satona-steam .steam-library-sidebar p {
+  font-size: 10px;
+  padding: 10px;
+  color: #9aba82;
+}
+.satona-steam .steam-library-sidebar button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  border: 0;
+  color: #b9c9d7;
+  background: none;
+  font-size: 11px;
+  padding: 7px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.satona-steam .steam-library-sidebar button img {
+  width: 23px;
+  height: 23px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.satona-steam .steam-library-sidebar button:hover,
+.satona-steam .steam-library-sidebar button.active {
+  background: #3a536b;
+  color: white;
+}
+.satona-steam .steam-library-sidebar button .game-thumbnail-fallback {
+  display: none;
+}
+.satona-steam .steam-library-sidebar .steam-library-home {
+  background: #344859;
+  margin-top: 15px;
+}
+.satona-steam .steam-library-home > span {
+  margin-left: auto;
+}
+.satona-steam .steam-library-sidebar > div {
+  max-height: 720px;
+  overflow: auto;
+}
+.satona-steam .steam-recent > div {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.satona-steam .steam-recent button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #243b4e;
+  border: 0;
+  padding: 0;
+  color: #c7d5e0;
+  min-width: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.satona-steam .steam-recent img {
+  width: 55px;
+  height: 65px;
+  object-fit: cover;
+}
+.satona-steam .steam-recent button > span {
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 7px;
+}
+.satona-steam .steam-recent small {
+  display: block;
+  color: #8dad67;
+  margin-top: 7px;
+  font-size: 9px;
+}
+.satona-steam .steam-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  background: #171d25;
+  color: #7992a6;
+  font-size: 9px;
+  padding: 13px 22px;
+}
+.satona-steam .steam-status > span:first-child {
+  color: #86ac59;
+}
+.satona-steam button:focus-visible,
+.satona-steam input:focus-visible,
+.satona-steam select:focus-visible {
+  outline: 2px solid #66c0f4;
+  outline-offset: 3px;
+}
+.satona-steam button:disabled {
+  opacity: 0.45;
+  cursor: wait;
+}
+@media (max-width: 850px) {
+  .satona-steam .steam-library-sidebar {
+    width: 155px;
+  }
+  .satona-steam .steam-content {
+    padding: 18px;
+  }
+  .satona-steam .steam-value-banner strong {
+    font-size: 16px;
+  }
+  .satona-steam .steam-client-header nav > span {
+    display: none;
+  }
+  .satona-steam .steam-recent > div {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .satona-steam .steam-toolbar {
+    gap: 10px;
+    padding: 12px 18px;
+  }
+  .satona-steam .steam-feature-copy {
+    max-width: 80%;
+    padding: 25px;
+  }
+  .satona-steam .steam-feature-art {
+    left: 25%;
+  }
+  .satona-steam .steam-grid {
+    grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  }
+  .satona-steam .steam-brand small {
+    display: none;
+  }
+}
+@media (max-width: 550px) {
+  .satona-steam .steam-library-sidebar {
+    display: none;
+  }
+  .satona-steam .steam-toolbar {
+    flex-wrap: wrap;
+  }
+  .satona-steam .steam-search {
+    order: 3;
+    max-width: none;
+    flex-basis: 100%;
+  }
+  .satona-steam .steam-toolbar > button {
+    margin-left: auto;
+  }
+  .satona-steam .steam-value-banner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .satona-steam .steam-feature-copy {
+    max-width: 100%;
+  }
+  .satona-steam .steam-shelf-heading {
+    flex-wrap: wrap;
+  }
+  .satona-steam .steam-shelf-heading h2 {
+    flex-basis: 100%;
+  }
+  .satona-steam .steam-status span:last-child {
+    display: none;
+  }
+  .satona-steam .steam-grid {
+    gap: 10px;
+  }
+  .satona-steam .steam-client-header {
+    padding: 18px 18px 0;
+  }
+}

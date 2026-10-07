@@ -12,6 +12,13 @@ import "./redesign.css";
 export default function App() {
   const unlocked = hasStudyGuidesAccess();
   const [launched, setLaunched] = useState<"legacy" | "webos" | null>(null);
+  const [accountRevision, setAccountRevision] = useState(0);
+  useEffect(() => {
+    const restored = () => setAccountRevision((value) => value + 1);
+    window.addEventListener("satona-account-restored", restored);
+    return () =>
+      window.removeEventListener("satona-account-restored", restored);
+  }, []);
 
   useEffect(() => {
     if (unlocked) {
@@ -30,9 +37,9 @@ export default function App() {
   return unlocked ? (
     launched ? (
       launched === "webos" ? (
-        <WebOS onExit={() => setLaunched(null)} />
+        <WebOS key={accountRevision} onExit={() => setLaunched(null)} />
       ) : (
-        <Browser />
+        <Browser key={accountRevision} />
       )
     ) : (
       <LaunchScreen onLaunch={setLaunched} />

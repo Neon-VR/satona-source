@@ -1,0 +1,201 @@
+.satona-account {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100%;
+  padding: 40px;
+  gap: 40px;
+  background:
+    radial-gradient(ellipse at 0 0, #35306460, transparent 65%), #100e1d;
+  color: #e9e6f5;
+}
+.satona-account .account-hero {
+  padding: 40px 0;
+}
+.satona-account .account-hero > span {
+  width: 65px;
+  height: 65px;
+  background: linear-gradient(130deg, #6650a4, #362855);
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: #d0b7ff;
+  margin-bottom: 30px;
+}
+.satona-account .account-hero > small {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #b79adf;
+}
+.satona-account .account-hero h1 {
+  font-size: clamp(28px, 4vw, 48px);
+  line-height: 1.06;
+  letter-spacing: -2px;
+  margin: 18px 0;
+}
+.satona-account .account-hero p,
+.satona-account .account-panel p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #a9a2bd;
+}
+.satona-account .account-panel {
+  padding: 27px;
+  background: #20192e99;
+  border: 1px solid #453556;
+  border-radius: 15px;
+  align-self: center;
+  min-width: 0;
+}
+.satona-account .account-panel h2 {
+  font-size: 21px;
+  margin: 0 0 10px;
+}
+.satona-account .account-status {
+  padding: 10px;
+  background: #ffffff05;
+  border-left: 2px solid #a581d1;
+}
+.satona-account .account-panel form {
+  display: grid;
+  gap: 16px;
+}
+.satona-account .account-panel label {
+  display: grid;
+  gap: 7px;
+  font-size: 11px;
+  color: #c8badb;
+}
+.satona-account .account-panel input:not([type="checkbox"]) {
+  background: #110d1c;
+  border: 1px solid #4a395c;
+  padding: 12px;
+  border-radius: 6px;
+  color: white;
+  width: 100%;
+  box-sizing: border-box;
+}
+.satona-account .account-panel form > small {
+  font-size: 10px;
+  color: #96899e;
+}
+.satona-account .account-panel .account-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+}
+.satona-account .account-check input {
+  accent-color: #b094e4;
+  margin-top: 3px;
+}
+.satona-account .account-check small {
+  display: block;
+  color: #9f92af;
+  font-size: 10px;
+  margin-top: 5px;
+}
+.satona-account .account-panel button {
+  border: 0;
+  background: #b798ec;
+  color: #1c102d;
+  padding: 12px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+}
+.satona-account .account-panel button:disabled {
+  opacity: 0.45;
+  cursor: wait;
+}
+.satona-account .account-panel .account-toggle,
+.satona-account .account-panel .account-signout {
+  background: transparent;
+  color: #c6b5df;
+  width: 100%;
+  margin-top: 12px;
+}
+.satona-account .account-note {
+  font-size: 10px !important;
+}
+.satona-account .account-limits {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-top: 1px solid #453556;
+  margin-top: 18px;
+  padding-top: 12px;
+  color: #b29bcf;
+}
+.satona-account .account-limits p {
+  margin: 0;
+  font-size: 10px;
+}
+.satona-account .account-limits svg {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.satona-account .account-email {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  margin: 20px 0;
+}
+.satona-account .account-facts {
+  display: grid;
+  gap: 12px;
+}
+.satona-account .account-facts span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: #9e91af;
+  font-size: 11px;
+}
+.satona-account .account-facts b {
+  font-weight: 400;
+  color: #dccbef;
+  text-align: right;
+}
+.satona-account .account-actions {
+  display: flex;
+  gap: 8px;
+}
+.satona-account .account-actions button {
+  flex: 1;
+  font-size: 11px;
+}
+@media (max-width: 750px) {
+  .satona-account {
+    display: block;
+    padding: 24px;
+  }
+  .satona-account .account-hero {
+    padding: 0 0 20px;
+  }
+  .satona-account .account-hero > span {
+    float: right;
+    margin: 0;
+  }
+  .satona-account .account-hero h1 {
+    font-size: 32px;
+  }
+  .satona-account .account-panel {
+    padding: 22px;
+  }
+}
+
+.settings-account {
+  margin: 24px 0;
+  border: 1px solid #4b365e;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.settings-account > summary {
+  padding: 18px 22px;
+  cursor: pointer;
+  color: #dbc8ff;
+}
+.settings-account .satona-account {
+  min-height: auto;
+}

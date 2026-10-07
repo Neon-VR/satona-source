@@ -10,6 +10,7 @@ import Games from "../apps/Games";
 import YouTube from "../apps/YouTube";
 import Chat from "../apps/Chat";
 import Settings from "../apps/Settings";
+import Account from "../apps/Account";
 import CloudGaming from "../apps/CloudGaming";
 import Icon from "../components/Icon";
 import { readPreference, savePreference } from "../lib/preferences";
@@ -218,6 +219,7 @@ export default function WebOS({ onExit }: { onExit: () => void }) {
     setDragging(false);
   }
   function content(w: AppWindow) {
+    if (w.id === "account") return <Account />;
     if (w.id === "browser")
       return <Browser key={w.url || "browser"} embedded initialUrl={w.url} />;
     if (w.id === "games") return <Games />;
