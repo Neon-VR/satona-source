@@ -37,8 +37,13 @@ support UDP. TikTok and cloud gaming may load their interface but fail on some
 media or streaming requests; changing a frontend cannot remove these limits.
 Use a compatible Wisp relay in Settings for broader reachability.
 
-The browser uses Scramjet production defaults and recreates failed Epoxy clients
-before retrying a bodyless GET/HEAD once. It never automatically replays submissions.
+Settings → Browsing → Proxy transport lets users select Epoxy or libcurl, then
+apply and reload. Epoxy remains the default. The browser uses Scramjet production
+defaults and recreates failed transport clients before retrying a bodyless GET/HEAD
+once. Persistent TLS-connect failures on the bundled Worker use its streaming
+HTTP fallback, enabling page reads from Cloudflare-hosted sites such as better16.xyz.
+It never automatically replays submissions; WebSockets and form submissions still
+require a reachable raw TCP destination or a compatible custom Wisp relay.
 The checked-in `public/scramjet/scramjet.js` contains a history API compatibility
 fix: a null/omitted pushState/replaceState URL must remain absent rather than be
 rewritten to a `/null` destination (which can cause TikTok 404s). Preserve this
@@ -47,7 +52,7 @@ patch when updating vendored Scramjet assets, or upgrade to an upstream fix.
 ## Checks
 
 ```
-node --test --test-isolation=none scripts/features.test.mjs scripts/transport.test.mjs wisp-worker/test/wisp.test.js
+node --test --test-isolation=none scripts/features.test.mjs scripts/transport.test.mjs wisp-worker/test/*.test.js
 pnpm build
 ```
 

@@ -24,6 +24,11 @@ export default function Settings() {
   const [relay, setRelay] = useState(
     () => localStorage.getItem("satona.wisp") || "",
   );
+  const [transport, setTransport] = useState(() =>
+    localStorage.getItem("satona.transport") === "libcurl"
+      ? "libcurl"
+      : "epoxy",
+  );
   const [status, setStatus] = useState("");
   function saveTab(value = identity) {
     if (!value.title.trim()) {
@@ -142,7 +147,7 @@ export default function Settings() {
                 <button
                   key={color}
                   aria-label={
-                    ["Mint", "Lavender", "Sky", "Peach", "Rose"][index]
+                    ["Galaxy purple", "Lavender", "Sky", "Peach", "Rose"][index]
                   }
                   aria-pressed={accent === color}
                   style={{ background: color }}
@@ -209,6 +214,29 @@ export default function Settings() {
             The default free Cloudflare relay cannot reach every website. You
             can use your own Wisp server when a site is incompatible.
           </p>
+          <label className="settings-field">
+            Proxy transport
+            <select
+              value={transport}
+              onChange={(event) => setTransport(event.target.value)}
+            >
+              <option value="epoxy">Epoxy</option>
+              <option value="libcurl">libcurl</option>
+            </select>
+          </label>
+          <p>
+            Choose how Satona connects through your Wisp server. Applying this
+            restarts Satona and closes its browsing tabs.
+          </p>
+          <button
+            className="secondary-button"
+            onClick={() => {
+              localStorage.setItem("satona.transport", transport);
+              location.reload();
+            }}
+          >
+            Apply transport &amp; reload
+          </button>
           <form
             onSubmit={(event) => {
               event.preventDefault();

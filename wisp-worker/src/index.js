@@ -1,9 +1,11 @@
 import { connect } from "cloudflare:sockets";
 import { serveWisp } from "./wisp.js";
+import { relayHttp } from "./http-relay.js";
 
 export default {
   fetch(request, env) {
     const path = new URL(request.url).pathname;
+    if (path === "/fetch") return relayHttp(request, env);
     if (path === "/healthz") {
       return Response.json({ service: "satona-wisp-browser-20261005", protocol: "Wisp v1 TCP", transports: ["epoxy", "libcurl"], udp: false, maxStreams: 6 });
     }

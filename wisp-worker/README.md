@@ -4,7 +4,7 @@ The browser's default relay is the Worker `satona-wisp-browser-20261005`, deploy
 
 Supports Wisp v1 TCP streams used by both Epoxy and libcurl transports. Connect to `wss://<deployment-host>/wisp/`. TLS certificate validation stays in the client. `/healthz` reports capabilities.
 
-Free Worker limitations: six simultaneous outbound TCP streams per WebSocket, HTTP/HTTPS ports only, no UDP, and Cloudflare blocks raw TCP connections to Cloudflare IPs and private networks. Cloudflare-hosted websites may not load. Free-plan quotas also apply. This cannot provide the same reachability as a full Wisp server on a VM or Container.
+Free Worker limitations: six simultaneous outbound TCP streams per WebSocket, HTTP/HTTPS ports only, no UDP, and Cloudflare blocks raw TCP connections to Cloudflare IPs and private networks. The `/fetch` endpoint provides a streaming HTTP fallback for GET/HEAD requests that fail their TLS connection twice. It preserves redirects and cookies, verifies TLS through Cloudflare's fetch API, and limits browser callers to `ALLOWED_ORIGINS`. The browser never automatically replays submissions. WebSockets, form submissions, anti-bot checks, and media may still need a full Wisp server. Free-plan quotas also apply.
 
 `ALLOWED_ORIGINS` limits browser callers to the deployed Satona site and local development. It is not authentication; non-browser clients can supply their own Origin header.
 
