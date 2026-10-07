@@ -65,6 +65,13 @@ Push the source to `Neon-VR/satona-source` for the site's configured deployment
 integration. Verify the deployed site at `https://satona-study.b-cdn.net/` after
 its build finishes. A source push alone is not proof that the CDN has updated.
 
+Bunny storage uses the `satona-site/dist` directory. The storage zone's custom
+404 document is currently `/dist/index-1bf6c01.html`, a versioned copy of the
+production index. When deploying the next release, upload its hashed assets
+first, then a new versioned HTML entry, update that custom document path, and
+purge SATONA-STUDY. Verify the bundle URL on the public root; replacing
+`index.html` alone can leave Bunny's custom fallback document stale.
+
 For optional npm asset distribution, run
 `node scripts/prepare-cdn.mjs <npm-package-name> <version>` after building.
 Review `npm pack --dry-run` in `cdn-package/`, then publish with npm authentication
