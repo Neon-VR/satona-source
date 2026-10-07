@@ -50,6 +50,9 @@ export default function Games() {
   const [favorites, setFavorites] = useState(() =>
     readPreference<string[]>("satona.game-favorites", []),
   );
+  const [savedGames, setSavedGames] = useState(() =>
+    readPreference<Entry[]>("satona.favorite-games", []),
+  );
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [selected, setSelected] = useState<Entry | null>(null);
   const [html, setHtml] = useState("");
@@ -79,13 +82,14 @@ export default function Games() {
     };
   }, [retry]);
   useEffect(() => {
+    if (query === search) return;
     const timer = setTimeout(() => {
       setSearch(query);
       setPage(1);
       setLumin([]);
     }, 300);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, search]);
   useEffect(() => {
     let active = true;
     setLuminLoading(true);
@@ -193,10 +197,30 @@ export default function Games() {
       if (first[i]) merged.push(first[i]);
       if (second[i]) merged.push(second[i]);
     }
-    return onlyFavorites
-      ? merged.filter((game) => favorites.includes(`${game.source}:${game.id}`))
-      : merged;
-  }, [source, filtered, lumin, page, onlyFavorites, favorites]);
+    if (!onlyFavorites) return merged;
+    const available = new Map(
+      [...savedGames, ...gn, ...lumin].map((game) => [
+        `${game.source}:${game.id}`,
+        game,
+      ]),
+    );
+    return [...available.values()].filter(
+      (game) =>
+        favorites.includes(`${game.source}:${game.id}`) &&
+        (source === "All" || source === game.source) &&
+        game.name.toLowerCase().includes(search.toLowerCase()),
+    );
+  }, [
+    source,
+    filtered,
+    lumin,
+    page,
+    onlyFavorites,
+    favorites,
+    savedGames,
+    gn,
+    search,
+  ]);
   const hasMore =
     (source !== "LuminSDK" && filtered.length > page * 24) ||
     (source !== "gn-math" && page < pages);
@@ -327,6 +351,18 @@ export default function Games() {
                       : [...favorites, key];
                     setFavorites(next);
                     savePreference("satona.game-favorites", next);
+                    const records = next.includes(key)
+                      ? [
+                          ...savedGames.filter(
+                            (item) => `${item.source}:${item.id}` !== key,
+                          ),
+                          game,
+                        ]
+                      : savedGames.filter(
+                          (item) => `${item.source}:${item.id}` !== key,
+                        );
+                    setSavedGames(records);
+                    savePreference("satona.favorite-games", records);
                   }}
                 >
                   ☆
@@ -363,7 +399,7 @@ export default function Games() {
           </p>
         </div>
       )}
-      {hasMore && (
+      {hasMore && !onlyFavorites && (
         <button
           className="secondary-button load-more"
           disabled={luminLoading && source !== "gn-math"}
