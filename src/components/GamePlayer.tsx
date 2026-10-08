@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { loadLumin } from "../lib/lumin";
 import type { GameEntry } from "../lib/game-library";
 import GameCover from "./GameCover";
+import { isMinecraftGame } from "../lib/minecraft-catalog";
+import minecraftLogo from "../assets/minecraft-loading.png";
 import "./game-launch.css";
 
 export default function GamePlayer({
@@ -71,7 +73,14 @@ export default function GamePlayer({
           }}
         />
       )}
-      {!ready && (
+      {!ready && isMinecraftGame(game) && (
+        <div className="minecraft-loading-screen" aria-label={`Starting ${game.name}`}>
+          <img src={minecraftLogo} alt="Minecraft" />
+          <button className="game-dialog-close" aria-label={`Cancel ${game.name} launch`} onClick={onClose}>×</button>
+          {error ? <div className="minecraft-loading-error" role="alert"><p>{error}</p><button onClick={() => setAttempt(value => value + 1)}>Try again</button><button onClick={onClose}>Close game</button></div> : <span className="minecraft-loading-status" role="status">Loading {game.name}…</span>}
+        </div>
+      )}
+      {!ready && !isMinecraftGame(game) && (
         <div className="game-starting-backdrop">
           <section
             className="game-starting-panel"
