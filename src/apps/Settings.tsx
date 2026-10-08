@@ -180,7 +180,7 @@ export default function Settings() {
           </label>
           <hr />
           <h2>Your launch experience</h2>
-          <p>Choose Legacy UI or the WebOS desktop from the launcher.</p>
+          <p>Launch the WebOS desktop. Legacy UI is returning soon.</p>
           <button
             className="secondary-button"
             onClick={() => location.reload()}

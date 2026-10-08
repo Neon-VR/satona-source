@@ -1,4 +1,3 @@
-import Browser from "./Browser";
 import StudyGuidesGate, {
   hasStudyGuidesAccess,
 } from "./components/StudyGuidesGate";
@@ -11,7 +10,7 @@ import "./redesign.css";
 
 export default function App() {
   const unlocked = hasStudyGuidesAccess();
-  const [launched, setLaunched] = useState<"legacy" | "webos" | null>(null);
+  const [launched, setLaunched] = useState(false);
   const [accountRevision, setAccountRevision] = useState(0);
   useEffect(() => {
     const restored = () => setAccountRevision((value) => value + 1);
@@ -36,13 +35,9 @@ export default function App() {
 
   return unlocked ? (
     launched ? (
-      launched === "webos" ? (
-        <WebOS key={accountRevision} onExit={() => setLaunched(null)} />
-      ) : (
-        <Browser key={accountRevision} />
-      )
+      <WebOS key={accountRevision} onExit={() => setLaunched(false)} />
     ) : (
-      <LaunchScreen onLaunch={setLaunched} />
+      <LaunchScreen onLaunch={() => setLaunched(true)} />
     )
   ) : (
     <StudyGuidesGate />

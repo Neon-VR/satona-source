@@ -4,7 +4,7 @@ import AnimatedGalaxyBackground from "./AnimatedGalaxyBackground";
 export default function LaunchScreen({
   onLaunch,
 }: {
-  onLaunch: (mode: "legacy" | "webos") => void;
+  onLaunch: () => void;
 }) {
   return (
     <main className="launch-screen">
@@ -20,12 +20,12 @@ export default function LaunchScreen({
           <br />
           <em>at home.</em>
         </h1>
-        <p>Launch Satona with WebOS or legacy UI?</p>
+        <p>Your desktop is ready. Launch Satona with WebOS.</p>
       </div>
       <div className="launch-options">
         <button
-          className="launch-option ready"
-          onClick={() => onLaunch("legacy")}
+          className="launch-option returning"
+          disabled
         >
           <div className="launch-preview">
             <div className="preview-sidebar" />
@@ -35,18 +35,14 @@ export default function LaunchScreen({
               <i />
             </div>
           </div>
-          <span className="launch-option-tag">READY TO EXPLORE</span>
-          <h2>
-            Legacy UI <span>↗</span>
-          </h2>
-          <p>
-            The all-new Satona browser. Play, watch, connect, and make it yours.
-          </p>
-          <strong>Launch Satona →</strong>
+          <span className="launch-option-tag">RETURNING SOON</span>
+          <h2>Legacy UI</h2>
+          <p>Legacy UI is taking a break. Explore your Satona desktop with WebOS.</p>
+          <strong>Returning soon</strong>
         </button>
         <button
           className="launch-option ready webos-ready"
-          onClick={() => onLaunch("webos")}
+          onClick={onLaunch}
         >
           <div className="webos-preview">
             <Icon name="apps" size={56} />
