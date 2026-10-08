@@ -1,47 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Icon from "../components/Icon";
-import { loadGames, type Game } from "../lib/gn-games";
+import { loadGames } from "../lib/gn-games";
 import { loadLumin } from "../lib/lumin";
 import { readPreference, savePreference } from "../lib/preferences";
+import Cover from "../components/GameCover";
+import GamePlayer from "../components/GamePlayer";
+import { rememberGame, type GameEntry as Entry } from "../lib/game-library";
 import "./steam.css";
-type Entry = Game & {
-  source: "gn-math" | "LuminSDK";
-  imageToken?: string;
-  category?: string;
-};
-function Cover({ game }: { game: Entry }) {
-  const [src, setSrc] = useState(
-    game.coverFile
-      ? `https://raw.githubusercontent.com/gn-math/covers/main/${game.coverFile}`
-      : "",
-  );
-  useEffect(() => {
-    setSrc(
-      game.coverFile
-        ? `https://raw.githubusercontent.com/gn-math/covers/main/${game.coverFile}`
-        : "",
-    );
-    if (!game.imageToken) return;
-    let active = true;
-    void loadLumin()
-      .then((sdk) => sdk.getImageUrl(game.imageToken!))
-      .then((url) => {
-        if (active) setSrc(url);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [game.imageToken, game.coverFile]);
-  return src ? (
-    <img src={src} alt="" loading="lazy" onError={() => setSrc("")} />
-  ) : (
-    <span className="game-thumbnail-fallback">
-      {game.name.slice(0, 2).toUpperCase()}
-    </span>
-  );
-}
-export default function Games() {
+export default function Games({
+  onLaunch,
+}: {
+  onLaunch?: (game: Entry) => void;
+}) {
   const [view, setView] = useState<"store" | "library">("store");
   const [focused, setFocused] = useState<Entry | null>(null);
   const [recent, setRecent] = useState(() =>
@@ -68,10 +38,8 @@ export default function Games() {
   );
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [selected, setSelected] = useState<Entry | null>(null);
-  const [gameUrl, setGameUrl] = useState("");
-  const [playError, setPlayError] = useState("");
   const [retry, setRetry] = useState(0);
-  const iframe = useRef<HTMLIFrameElement>(null);
+  const player = useRef<HTMLDivElement>(null);
   const nextShelf = useRef<HTMLDivElement>(null);
   const nextLibraryShelf = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -152,38 +120,11 @@ export default function Games() {
     };
   }, [page, search, retry, source]);
   useEffect(() => {
-    if (!selected) return;
-    let active = true;
-    setGameUrl("");
-    setPlayError("");
-    void (async () => {
-      try {
-        if (selected.source === "LuminSDK") {
-          const sdk = await loadLumin();
-          const result = await sdk.getGameUrl(selected.id);
-          if (active) setGameUrl(result.url);
-          return;
-        }
-        const params = new URLSearchParams(
-          selected.assetFolder
-            ? { folder: selected.assetFolder }
-            : { file: selected.htmlFile },
-        );
-        if (active)
-          setGameUrl(
-            `https://satona-wisp-browser-20261005.satona.workers.dev/game?${params}`,
-          );
-      } catch {
-        if (active)
-          setPlayError(
-            "This game could not be loaded. Go back and try another game.",
-          );
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [selected]);
+    const refresh = () =>
+      setRecent(readPreference<Entry[]>("satona.recent-games", []));
+    window.addEventListener("satona-preferences", refresh);
+    return () => window.removeEventListener("satona-preferences", refresh);
+  }, []);
   const filtered = useMemo(
     () =>
       gn.filter(
@@ -279,14 +220,11 @@ export default function Games() {
     view,
   ]);
   function play(game: Entry) {
-    const next = [
-      game,
-      ...recent.filter(
-        (item) => `${item.source}:${item.id}` !== `${game.source}:${game.id}`,
-      ),
-    ].slice(0, 16);
-    setRecent(next);
-    savePreference("satona.recent-games", next);
+    if (onLaunch) {
+      onLaunch(game);
+      return;
+    }
+    setRecent(rememberGame(game));
     setSelected(game);
   }
   function showDetails(game: Entry) {
@@ -366,28 +304,14 @@ export default function Games() {
           <strong>{selected.name}</strong>
           <button
             className="secondary-button"
-            onClick={() => void iframe.current?.requestFullscreen()}
+            onClick={() => void player.current?.requestFullscreen()}
           >
             Fullscreen ↗
           </button>
         </div>
-        {playError ? (
-          <p className="source-error" role="alert">
-            {playError}
-          </p>
-        ) : gameUrl ? (
-          <iframe
-            ref={iframe}
-            className="game-player-frame"
-            title={selected.name}
-            src={gameUrl}
-            sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms allow-popups"
-            allow="fullscreen; autoplay; gamepad; pointer-lock"
-            allowFullScreen
-          />
-        ) : (
-          <div className="empty-library">Loading your game…</div>
-        )}
+        <div ref={player} className="legacy-game-player">
+          <GamePlayer game={selected} onClose={() => setSelected(null)} />
+        </div>
       </section>
     );
   return (

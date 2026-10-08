@@ -5,6 +5,17 @@ import {
   type CSSProperties,
   type PointerEvent,
 } from "react";
+import { flushSync } from "react-dom";
+import GamePlayer from "../components/GamePlayer";
+import GameCover from "../components/GameCover";
+import GameLaunchDialog from "./GameLaunchDialog";
+import { useGameSearch } from "./useGameSearch";
+import {
+  gameAppId,
+  rememberGame,
+  type GameEntry,
+  type GameDisplayMode,
+} from "../lib/game-library";
 import Browser from "../Browser";
 import Games from "../apps/Games";
 import YouTube from "../apps/YouTube";
@@ -31,15 +42,35 @@ type AppWindow = {
   minimized: boolean;
   maximized: boolean;
   url?: string;
+  game?: GameEntry;
+  mode?: GameDisplayMode;
 };
+type LauncherApp = DesktopApp & { game?: GameEntry };
+function windowApp(w: AppWindow): LauncherApp {
+  return w.game
+    ? {
+        id: w.id,
+        name: w.game.name,
+        game: w.game,
+        icon: "games",
+        color: "#8acaff",
+        description: "Ready to play",
+        category: "Games",
+      }
+    : desktopApps.find((a) => a.id === w.id)!;
+}
 const builtins = desktopApps.filter((a) => a.builtin).map((a) => a.id);
-function AppIcon({ app, size = 27 }: { app: DesktopApp; size?: number }) {
+function AppIcon({ app, size = 27 }: { app: LauncherApp; size?: number }) {
   return (
     <span
       className={`os-app-icon os-icon-${app.id}`}
       style={{ "--app-color": app.color, color: app.color } as CSSProperties}
     >
-      <Icon name={app.icon} size={size} />
+      {app.game ? (
+        <GameCover game={app.game} />
+      ) : (
+        <Icon name={app.icon} size={size} />
+      )}
     </span>
   );
 }
@@ -56,6 +87,10 @@ export default function WebOS({ onExit }: { onExit: () => void }) {
   const [windows, setWindows] = useState<AppWindow[]>([]);
   const [start, setStart] = useState(false);
   const [search, setSearch] = useState("");
+  const [pendingGame, setPendingGame] = useState<GameEntry | null>(null);
+  const gameSearch = useGameSearch(search, start);
+  const windowElements = useRef(new Map<string, HTMLElement>());
+  const exclusive = useRef<string | null>(null);
   const [clock, setClock] = useState(new Date());
   const [notice, setNotice] = useState("");
   const [quick, setQuick] = useState(false);
@@ -91,6 +126,15 @@ export default function WebOS({ onExit }: { onExit: () => void }) {
       if (e.key === "Escape") {
         setStart(false);
         setQuick(false);
+        if (document.fullscreenElement && exclusive.current)
+          void document.exitFullscreen().catch(() => {});
+        setWindows((ws) =>
+          ws.map((w) =>
+            w.game && !w.minimized && w.mode !== "bordered"
+              ? { ...w, mode: "bordered", maximized: false }
+              : w,
+          ),
+        );
       }
     };
     window.addEventListener("keydown", key);
@@ -121,6 +165,94 @@ export default function WebOS({ onExit }: { onExit: () => void }) {
   }, []);
   function update(id: string, patch: Partial<AppWindow>) {
     setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, ...patch } : w)));
+  }
+  useEffect(() => {
+    const changed = () => {
+      if (!document.fullscreenElement && exclusive.current) {
+        const id = exclusive.current;
+        exclusive.current = null;
+        setWindows((ws) =>
+          ws.map((w) =>
+            w.id === id ? { ...w, mode: "bordered", maximized: false } : w,
+          ),
+        );
+      }
+    };
+    document.addEventListener("fullscreenchange", changed);
+    return () => document.removeEventListener("fullscreenchange", changed);
+  }, []);
+  function leaveExclusive(id: string) {
+    if (exclusive.current === id) {
+      exclusive.current = null;
+      if (document.fullscreenElement)
+        void document.exitFullscreen().catch(() => {});
+    }
+  }
+  function closeWindow(id: string) {
+    leaveExclusive(id);
+    setWindows((ws) => ws.filter((w) => w.id !== id));
+  }
+  function minimizeWindow(id: string) {
+    leaveExclusive(id);
+    update(id, {
+      minimized: true,
+      ...(id.startsWith("game:") ? { mode: "bordered" as const } : {}),
+    });
+  }
+  function launchGame(game: GameEntry, mode: GameDisplayMode) {
+    const id = gameAppId(game);
+    try {
+      rememberGame(game);
+    } catch {
+      setNotice("Game opened, but recent games could not be saved.");
+    }
+    flushSync(() => {
+      setStart(false);
+      setQuick(false);
+      setPendingGame(null);
+      setWindows((ws) => {
+        const existing = ws.find((w) => w.id === id);
+        const width = Math.min(1080, innerWidth - 24),
+          height = Math.min(720, innerHeight - 116);
+        const win: AppWindow = existing
+          ? {
+              ...existing,
+              minimized: false,
+              maximized: false,
+              mode,
+              z: ++top.current,
+            }
+          : {
+              id,
+              game,
+              mode,
+              x: (innerWidth - width) / 2,
+              y: Math.max(40, (innerHeight - height) / 2 - 20),
+              width,
+              height,
+              z: ++top.current,
+              minimized: false,
+              maximized: false,
+            };
+        return existing ? ws.map((w) => (w.id === id ? win : w)) : [...ws, win];
+      });
+    });
+    if (mode === "exclusive") {
+      const element = windowElements.current.get(id);
+      exclusive.current = id;
+      if (element?.requestFullscreen) {
+        void element.requestFullscreen().catch(() => {
+          exclusive.current = null;
+          update(id, { mode: "borderless" });
+          setNotice(
+            "Fullscreen is unavailable here. Your game is open borderless; move to the top edge for window controls.",
+          );
+        });
+      } else {
+        exclusive.current = null;
+        update(id, { mode: "borderless" });
+      }
+    }
   }
   function open(id: string, url?: string) {
     setStart(false);
@@ -181,7 +313,12 @@ export default function WebOS({ onExit }: { onExit: () => void }) {
     w: AppWindow,
     type: "move" | "resize",
   ) {
-    if (w.maximized || (e.target as HTMLElement).closest("button")) return;
+    if (
+      w.maximized ||
+      (w.game && w.mode !== "bordered") ||
+      (e.target as HTMLElement).closest("button")
+    )
+      return;
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
     drag.current = { id: w.id, type, px: e.clientX, py: e.clientY, origin: w };
@@ -219,10 +356,21 @@ export default function WebOS({ onExit }: { onExit: () => void }) {
     setDragging(false);
   }
   function content(w: AppWindow) {
+    if (w.game)
+      return (
+        <GamePlayer
+          game={w.game}
+          onClose={() => closeWindow(w.id)}
+          onOpenSteam={() => {
+            minimizeWindow(w.id);
+            open("games");
+          }}
+        />
+      );
     if (w.id === "account") return <Account />;
     if (w.id === "browser")
       return <Browser key={w.url || "browser"} embedded initialUrl={w.url} />;
-    if (w.id === "games") return <Games />;
+    if (w.id === "games") return <Games onLaunch={setPendingGame} />;
     if (w.id === "youtube") return <YouTube />;
     if (w.id === "chat") return <Chat />;
     if (w.id === "files") return <Files />;
@@ -316,24 +464,36 @@ export default function WebOS({ onExit }: { onExit: () => void }) {
         </span>
       </div>
       {windows.map((w) => {
-        const app = desktopApps.find((a) => a.id === w.id)!;
+        const app = windowApp(w);
+        const borderless = !!w.game && w.mode !== "bordered";
         return (
           <section
             key={w.id}
+            ref={(element) => {
+              if (element) windowElements.current.set(w.id, element);
+              else windowElements.current.delete(w.id);
+            }}
             aria-label={`${app.name} window`}
-            className={`os-app-window ${w.maximized ? "os-maximized" : ""} ${active?.id === w.id ? "os-focused" : ""}`}
+            className={`os-app-window ${w.game ? "os-game-window" : ""} ${borderless ? "os-game-borderless" : ""} ${w.maximized ? "os-maximized" : ""} ${active?.id === w.id ? "os-focused" : ""}`}
             style={{
               display: w.minimized ? "none" : "flex",
               left: w.maximized ? 8 : w.x,
               top: w.maximized ? 38 : w.y,
               width: w.maximized ? "calc(100% - 16px)" : w.width,
               height: w.maximized ? "calc(100% - 112px)" : w.height,
-              zIndex: w.z,
+              zIndex: borderless ? 150000 + w.z : w.z,
             }}
             onPointerDownCapture={() => {
               if (active?.id !== w.id) update(w.id, { z: ++top.current });
             }}
           >
+            {borderless && (
+              <div
+                className="os-game-top-edge"
+                tabIndex={0}
+                aria-label="Show game window controls"
+              />
+            )}
             <header
               className="os-window-bar"
               onPointerDown={(e) => begin(e, w, "move")}
@@ -341,40 +501,47 @@ export default function WebOS({ onExit }: { onExit: () => void }) {
               onPointerUp={end}
               onPointerCancel={end}
               onDoubleClick={(e) => {
-                if (!(e.target as HTMLElement).closest("button"))
+                if (!borderless && !(e.target as HTMLElement).closest("button"))
                   update(w.id, { maximized: !w.maximized });
               }}
             >
               <span>
-                <Icon name={app.icon} size={15} />
+                {w.game ? (
+                  <GameCover game={w.game} />
+                ) : (
+                  <Icon name={app.icon} size={15} />
+                )}
                 {app.name}
               </span>
               <div>
                 <button
                   aria-label={`Minimize ${app.name}`}
-                  onClick={() => update(w.id, { minimized: true })}
+                  onClick={() => minimizeWindow(w.id)}
                 >
                   −
                 </button>
                 <button
-                  aria-label={`${w.maximized ? "Restore" : "Maximize"} ${app.name}`}
-                  onClick={() => update(w.id, { maximized: !w.maximized })}
+                  aria-label={`${borderless ? "Window" : w.maximized ? "Restore" : "Maximize"} ${app.name}`}
+                  onClick={() => {
+                    if (borderless) {
+                      leaveExclusive(w.id);
+                      update(w.id, { mode: "bordered", maximized: false });
+                    } else update(w.id, { maximized: !w.maximized });
+                  }}
                 >
                   {w.maximized ? "❐" : "□"}
                 </button>
                 <button
                   className="os-close"
                   aria-label={`Close ${app.name}`}
-                  onClick={() =>
-                    setWindows((ws) => ws.filter((v) => v.id !== w.id))
-                  }
+                  onClick={() => closeWindow(w.id)}
                 >
                   ×
                 </button>
               </div>
             </header>
             <div className="os-window-body">{content(w)}</div>
-            {!w.maximized && (
+            {!w.maximized && !borderless && (
               <div
                 role="separator"
                 aria-label={`Resize ${app.name}`}
@@ -441,6 +608,34 @@ export default function WebOS({ onExit }: { onExit: () => void }) {
                 </button>
               ))}
           </div>
+          <div className="os-start-label">
+            {search.trim() ? "GAMES · READY TO PLAY" : "RECENT GAMES"}
+          </div>
+          <div className="os-start-games">
+            {gameSearch.games.map((game) => (
+              <button
+                key={gameAppId(game)}
+                aria-label={`Launch ${game.name} (${game.source})`}
+                onClick={() => launchGame(game, "exclusive")}
+              >
+                <GameCover game={game} />
+                <span>
+                  <b>{game.name}</b>
+                  <small>{game.source} · Ready to play</small>
+                </span>
+                <span aria-hidden="true">▶</span>
+              </button>
+            ))}
+            {gameSearch.busy && <p role="status">Searching games…</p>}
+            {gameSearch.error && <p role="status">{gameSearch.error}</p>}
+            {!gameSearch.busy && !gameSearch.games.length && (
+              <p>
+                {search.trim()
+                  ? "No matching games. Try another name."
+                  : "Search for a game to launch it directly."}
+              </p>
+            )}
+          </div>
           <footer>
             <span>
               <img src="/satona-emblem.png" alt="" />
@@ -491,7 +686,7 @@ export default function WebOS({ onExit }: { onExit: () => void }) {
         </button>
         <span className="os-dock-divider" />
         <nav aria-label="Taskbar">
-          {desktopApps
+          {[...desktopApps, ...windows.filter((w) => w.game).map(windowApp)]
             .filter(
               (a) =>
                 ["browser", "games", "files", "store"].includes(a.id) ||
@@ -506,9 +701,7 @@ export default function WebOS({ onExit }: { onExit: () => void }) {
                   aria-label={`Taskbar ${a.name}`}
                   className={`${win ? "running" : ""} ${active?.id === a.id ? "active" : ""}`}
                   onClick={() =>
-                    active?.id === a.id
-                      ? update(a.id, { minimized: true })
-                      : open(a.id)
+                    active?.id === a.id ? minimizeWindow(a.id) : open(a.id)
                   }
                 >
                   <AppIcon app={a} size={23} />
@@ -547,6 +740,13 @@ export default function WebOS({ onExit }: { onExit: () => void }) {
           />
         </div>
       </footer>
+      {pendingGame && (
+        <GameLaunchDialog
+          game={pendingGame}
+          onCancel={() => setPendingGame(null)}
+          onPlay={(mode) => launchGame(pendingGame, mode)}
+        />
+      )}
       {notice && (
         <div className="os-toast" role="status">
           <Icon name="apps" size={23} />
