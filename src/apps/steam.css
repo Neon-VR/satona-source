@@ -571,3 +571,5 @@
   font-size: 12px;
   min-height: 70px;
 }
+.steam-minecraft-link { display: flex; align-items: center; gap: 12px; padding: 11px 24px; background: #243124; color: #b7d0a6; font-size: 11px; border-bottom: 1px solid #526445; }
+.steam-minecraft-link button { margin-left: auto; color: #d2e5b9; text-decoration: underline; white-space: nowrap; }

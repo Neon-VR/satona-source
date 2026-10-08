@@ -7,10 +7,14 @@ import Cover from "../components/GameCover";
 import GamePlayer from "../components/GamePlayer";
 import { rememberGame, type GameEntry as Entry } from "../lib/game-library";
 import "./steam.css";
+import { isMinecraftGame } from "../lib/minecraft-catalog";
+import { loadLuminMinecraft } from "../lib/minecraft-games";
 export default function Games({
   onLaunch,
+  onOpenMinecraft,
 }: {
   onLaunch?: (game: Entry) => void;
+  onOpenMinecraft?: () => void;
 }) {
   const [view, setView] = useState<"store" | "library">("store");
   const [focused, setFocused] = useState<Entry | null>(null);
@@ -26,6 +30,18 @@ export default function Games({
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [luminTotal, setLuminTotal] = useState<number | null>(null);
+  const [movedLumin, setMovedLumin] = useState<Entry[] | null>(null);
+  useEffect(() => {
+    let active = true;
+    void loadLuminMinecraft()
+      .then((games) => {
+        if (active) setMovedLumin(games);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const [loading, setLoading] = useState(true);
   const [luminLoading, setLuminLoading] = useState(true);
   const [gnError, setGnError] = useState("");
@@ -48,7 +64,11 @@ export default function Games({
     loadGames()
       .then((games) => {
         if (active) {
-          setGn(games.map((game) => ({ ...game, source: "gn-math" })));
+          setGn(
+            games
+              .filter((game) => !isMinecraftGame(game))
+              .map((game) => ({ ...game, source: "gn-math" })),
+          );
           setGnError("");
         }
       })
@@ -85,14 +105,16 @@ export default function Games({
       .then((sdk) => sdk.getGames({ page, limit: 24, q: search }))
       .then((result) => {
         if (!active) return;
-        const games = result.games.map((game) => ({
-          id: game.id,
-          name: game.name,
-          htmlFile: "",
-          source: "LuminSDK" as const,
-          imageToken: game.image_token,
-          category: game.category,
-        }));
+        const games = result.games
+          .filter((game) => !isMinecraftGame(game))
+          .map((game) => ({
+            id: game.id,
+            name: game.name,
+            htmlFile: "",
+            source: "LuminSDK" as const,
+            imageToken: game.image_token,
+            category: game.category,
+          }));
         setLumin((current) =>
           page === 1
             ? games
@@ -151,6 +173,7 @@ export default function Games({
     );
     return [...available.values()].filter(
       (game) =>
+        !isMinecraftGame(game) &&
         favorites.includes(`${game.source}:${game.id}`) &&
         (source === "All" || source === game.source) &&
         game.name.toLowerCase().includes(search.toLowerCase()),
@@ -175,12 +198,20 @@ export default function Games({
   const catalogTotal = onlyFavorites
     ? games.length
     : (source === "LuminSDK" ? 0 : filtered.length) +
-      (source === "gn-math" ? 0 : (luminTotal ?? 0));
+      (source === "gn-math"
+        ? 0
+        : Math.max(
+            0,
+            (luminTotal ?? 0) -
+              (movedLumin || []).filter((game) =>
+                game.name.toLowerCase().includes(search.toLowerCase()),
+              ).length,
+          ));
   const totalLabel =
     catalogTotal.toLocaleString() +
     (!onlyFavorites &&
     source !== "gn-math" &&
-    luminTotal === null &&
+    (luminTotal === null || movedLumin === null) &&
     !luminError
       ? " + …"
       : "");
@@ -376,9 +407,25 @@ export default function Games({
           className={onlyFavorites ? "active" : ""}
           onClick={() => setOnlyFavorites(!onlyFavorites)}
         >
-          ★ Favorites <span>{favorites.length}</span>
+          ★ Favorites{" "}
+          <span>
+            {
+              savedGames.filter(
+                (game) =>
+                  !isMinecraftGame(game) &&
+                  favorites.includes(`${game.source}:${game.id}`),
+              ).length
+            }
+          </span>
         </button>
       </div>
+      {onOpenMinecraft && (
+        <div className="steam-minecraft-link">
+          <Icon name="minecraft" size={24} />
+          <span>Minecraft & Eaglercraft have a new home.</span>
+          <button onClick={onOpenMinecraft}>Open Minecraft Launcher ↗</button>
+        </div>
+      )}
       <div
         className={`steam-layout ${view === "library" ? "with-library" : ""}`}
       >
@@ -476,25 +523,30 @@ export default function Games({
               </button>
             </div>
           )}
-          {recent.length > 0 && !search && !onlyFavorites && (
-            <section className="steam-recent">
-              <h2>JUMP BACK IN</h2>
-              <div>
-                {recent.slice(0, 4).map((game) => (
-                  <button
-                    key={`${game.source}:${game.id}`}
-                    onClick={() => play(game)}
-                  >
-                    <Cover game={game} />
-                    <span>
-                      {game.name}
-                      <small>▶ Play again</small>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
+          {recent.some((game) => !isMinecraftGame(game)) &&
+            !search &&
+            !onlyFavorites && (
+              <section className="steam-recent">
+                <h2>JUMP BACK IN</h2>
+                <div>
+                  {recent
+                    .filter((game) => !isMinecraftGame(game))
+                    .slice(0, 4)
+                    .map((game) => (
+                      <button
+                        key={`${game.source}:${game.id}`}
+                        onClick={() => play(game)}
+                      >
+                        <Cover game={game} />
+                        <span>
+                          {game.name}
+                          <small>▶ Play again</small>
+                        </span>
+                      </button>
+                    ))}
+                </div>
+              </section>
+            )}
           <div className="steam-shelf-heading">
             <h2>
               {onlyFavorites

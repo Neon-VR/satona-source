@@ -6,6 +6,7 @@ import BrowserChrome from "./components/BrowserChrome";
 import HomePage from "./components/HomePage";
 import ProxyTab from "./components/ProxyTab";
 import Games from "./apps/Games";
+import Minecraft from "./apps/Minecraft";
 import Apps from "./apps/Apps";
 import Chat from "./apps/Chat";
 import Settings from "./apps/Settings";
@@ -181,7 +182,9 @@ export default function Browser({
           <small>SATONA BROWSER · YOUR WINDOW TO THE WEB</small>
         </section>
       );
-    if (section === "games") return <Games />;
+    if (section === "games")
+      return <Games onOpenMinecraft={() => setSection("minecraft")} />;
+    if (section === "minecraft") return <Minecraft />;
     if (section === "apps") return <Apps onOpen={navigate} />;
     if (section === "cloud") return <CloudGaming onOpen={navigate} />;
     if (section === "saved") return <SavedLinks onOpen={navigate} />;

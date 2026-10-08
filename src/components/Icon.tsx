@@ -16,6 +16,18 @@ export default function Icon({ name, size = 20 }: Props) {
   };
 
   switch (name) {
+    case "minecraft":
+      return (
+        <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
+          <path fill="#815634" d="m2 9 14 7v15L2 24z" />
+          <path fill="#593d29" d="m16 16 14-7v15l-14 7z" />
+          <path fill="#8bc34c" d="M2 9 16 2l14 7-14 7z" />
+          <path fill="#5e962d" d="m2 9 14 7v6l-4-2v-3l-4-2v3l-6-3z" />
+          <path fill="#417426" d="m16 16 14-7v6l-4 2v-3l-5 3v3l-5 2z" />
+          <path fill="#ad784b" d="m5 21 4 2v3l-4-2zm7 2 3 2v3l-3-2z" />
+          <path fill="#a1d166" d="m9 8 6-3 6 3-6 3z" />
+        </svg>
+      );
     case "steam":
       return (
         <svg

@@ -4,6 +4,7 @@ export type Section =
   | "home"
   | "apps"
   | "games"
+  | "minecraft"
   | "cloud"
   | "saved"
   | "movies"
@@ -21,6 +22,7 @@ const items: { id: Section; label: string; icon: string }[] = [
   { id: "home", label: "Home", icon: "home" },
   { id: "apps", label: "Apps", icon: "apps" },
   { id: "games", label: "Satona Steam", icon: "steam" },
+  { id: "minecraft", label: "Minecraft Launcher", icon: "minecraft" },
   { id: "cloud", label: "Cloud gaming", icon: "cloud" },
   { id: "movies", label: "Movies", icon: "movies" },
   { id: "music", label: "Music", icon: "music" },

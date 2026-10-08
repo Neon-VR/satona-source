@@ -18,6 +18,7 @@ import {
 } from "../lib/game-library";
 import Browser from "../Browser";
 import Games from "../apps/Games";
+import Minecraft from "../apps/Minecraft";
 import YouTube from "../apps/YouTube";
 import Chat from "../apps/Chat";
 import Settings from "../apps/Settings";
@@ -370,7 +371,15 @@ export default function WebOS({ onExit }: { onExit: () => void }) {
     if (w.id === "account") return <Account />;
     if (w.id === "browser")
       return <Browser key={w.url || "browser"} embedded initialUrl={w.url} />;
-    if (w.id === "games") return <Games onLaunch={setPendingGame} />;
+    if (w.id === "games")
+      return (
+        <Games
+          onLaunch={setPendingGame}
+          onOpenMinecraft={() => open("minecraft")}
+        />
+      );
+    if (w.id === "minecraft")
+      return <Minecraft onLaunch={(game) => launchGame(game, "exclusive")} />;
     if (w.id === "youtube") return <YouTube />;
     if (w.id === "chat") return <Chat />;
     if (w.id === "files") return <Files />;

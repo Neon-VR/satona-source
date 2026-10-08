@@ -10,6 +10,16 @@ export type DesktopApp = {
 };
 export const desktopApps: DesktopApp[] = [
   {
+    id: "minecraft",
+    name: "Minecraft Launcher",
+    icon: "minecraft",
+    color: "#96cc65",
+    description:
+      "All Minecraft and Eaglercraft versions from GN-Math and LuminSDK.",
+    category: "Play",
+    builtin: true,
+  },
+  {
     id: "account",
     name: "Satona Account",
     icon: "lock",
