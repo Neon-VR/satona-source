@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import ProxyTab from "./ProxyTab";
 import { loadLumin } from "../lib/lumin";
 import type { GameEntry } from "../lib/game-library";
 import GameCover from "./GameCover";
@@ -16,34 +17,33 @@ export default function GamePlayer({
   onOpenSteam?: () => void;
 }) {
   const [url, setUrl] = useState("");
-  const [ready, setReady] = useState(false);
+  const [introDone, setIntroDone] = useState(false);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
-  const loadTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
   useEffect(() => {
     let active = true;
     setUrl("");
-    setReady(false);
+    setIntroDone(false);
     setError("");
+    const introTimer = setTimeout(() => setIntroDone(true), 3000);
     const timer = setTimeout(() => {
-      if (active)
-        setError(
-          "The game is taking longer than expected. You can retry or return to your library.",
-        );
+      if (active) setError("The game provider did not respond. Try again.");
     }, 30000);
-    loadTimer.current = timer;
     void (async () => {
       try {
         const next =
           game.source === "LuminSDK"
             ? (await (await loadLumin()).getGameUrl(game.id)).url
-            : `https://satona-wisp-browser-20261005.satona.workers.dev/game?${new URLSearchParams(game.assetFolder ? { folder: game.assetFolder } : { file: game.htmlFile })}`;
+            : game.assetFolder
+              ? `https://raw.githubusercontent.com/gn-math/assets/main/${encodeURIComponent(game.assetFolder)}/index.html`
+              : `https://raw.githubusercontent.com/gn-math/html/main/${encodeURIComponent(game.htmlFile)}`;
         const target = new URL(next);
         if (target.protocol !== "https:")
           throw new Error("Unsupported game URL");
-        if (active) setUrl(next);
+        if (active) {
+          clearTimeout(timer);
+          setUrl(next);
+        }
       } catch {
         if (active) {
           clearTimeout(timer);
@@ -54,33 +54,67 @@ export default function GamePlayer({
     return () => {
       active = false;
       clearTimeout(timer);
+      clearTimeout(introTimer);
     };
   }, [game.id, game.source, game.assetFolder, game.htmlFile, attempt]);
   return (
     <div className="standalone-game-player">
       {url && (
-        <iframe
+        <ProxyTab
           key={`${url}:${attempt}`}
+          url={url}
+          revision={attempt}
           title={game.name}
-          src={url}
-          sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms allow-popups"
-          allow="fullscreen; autoplay; gamepad; pointer-lock"
-          allowFullScreen
-          onLoad={() => {
-            clearTimeout(loadTimer.current);
-            setReady(true);
-            setError("");
-          }}
+          gameDocument={game.source === "gn-math"}
+          onFrame={() => {}}
         />
       )}
-      {!ready && isMinecraftGame(game) && (
-        <div className="minecraft-loading-screen" aria-label={`Starting ${game.name}`}>
-          <img src={minecraftLogo} alt="Minecraft" />
-          <button className="game-dialog-close" aria-label={`Cancel ${game.name} launch`} onClick={onClose}>×</button>
-          {error ? <div className="minecraft-loading-error" role="alert"><p>{error}</p><button onClick={() => setAttempt(value => value + 1)}>Try again</button><button onClick={onClose}>Close game</button></div> : <span className="minecraft-loading-status" role="status">Loading {game.name}…</span>}
+      {introDone && !url && (
+        <div className="game-connection-status" role="status">
+          <p>{error || "Connecting to the game provider…"}</p>
+          {error && (
+            <button onClick={() => setAttempt((value) => value + 1)}>
+              Retry
+            </button>
+          )}
+          <button onClick={onClose}>Close game</button>
         </div>
       )}
-      {!ready && !isMinecraftGame(game) && (
+      {!introDone && isMinecraftGame(game) && (
+        <div
+          className="minecraft-loading-screen"
+          aria-label={`Starting ${game.name}`}
+        >
+          <img src={minecraftLogo} alt="Minecraft" />
+          <div
+            key={attempt}
+            className="game-three-second-progress minecraft-progress"
+            role="progressbar"
+            aria-label="Starting Minecraft"
+          />
+          <button
+            className="game-dialog-close"
+            aria-label={`Cancel ${game.name} launch`}
+            onClick={onClose}
+          >
+            ×
+          </button>
+          {error ? (
+            <div className="minecraft-loading-error" role="alert">
+              <p>{error}</p>
+              <button onClick={() => setAttempt((value) => value + 1)}>
+                Try again
+              </button>
+              <button onClick={onClose}>Close game</button>
+            </div>
+          ) : (
+            <span className="minecraft-loading-status" role="status">
+              Loading {game.name}…
+            </span>
+          )}
+        </div>
+      )}
+      {!introDone && !isMinecraftGame(game) && (
         <div className="game-starting-backdrop">
           <section
             className="game-starting-panel"
@@ -105,7 +139,12 @@ export default function GamePlayer({
                 <b>{error ? "COULD NOT START" : "LAUNCHING"}</b>
                 <p>{error || "Opening your game…"}</p>
               </div>
-              {!error && <div className="game-launch-progress" />}
+              <div
+                key={attempt}
+                className="game-three-second-progress"
+                role="progressbar"
+                aria-label="Starting game"
+              />
               {error && (
                 <button onClick={() => setAttempt((value) => value + 1)}>
                   Try again

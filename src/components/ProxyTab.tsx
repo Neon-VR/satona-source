@@ -6,10 +6,14 @@ export default function ProxyTab({
   url,
   revision,
   onFrame,
+  gameDocument = false,
+  title = "Satona Browser",
 }: {
   url: string;
   revision: number;
   onFrame: (frame: Frame | null) => void;
+  gameDocument?: boolean;
+  title?: string;
 }) {
   const iframe = useRef<HTMLIFrameElement>(null);
   const frame = useRef<Frame | null>(null);
@@ -31,6 +35,38 @@ export default function ProxyTab({
           const next = controller.createFrame(iframe.current);
           frame.current = next;
           callback.current(next);
+          if (gameDocument)
+            Tap.tap(next.hooks.fetch.preresponse, (context, props) => {
+              // GitHub serves HTML as text/plain. Set the document MIME
+              // before Scramjet rewrites it, only for this selected game URL.
+              const target = context.parsed.url;
+              const documentRequest =
+                target.href === url &&
+                ["document", "iframe"].includes(context.parsed.destination);
+              const assetType =
+                target.hostname === "raw.githubusercontent.com" &&
+                target.pathname.startsWith("/gn-math/assets/main/")
+                  ? (
+                      {
+                        js: "text/javascript",
+                        mjs: "text/javascript",
+                        css: "text/css",
+                        wasm: "application/wasm",
+                      } as Record<string, string>
+                    )[target.pathname.split(".").pop() ?? ""]
+                  : undefined;
+              const contentType = documentRequest
+                ? "text/html; charset=utf-8"
+                : assetType;
+              if (contentType && props.response.status === 200) {
+                props.response.headers.set("content-type", contentType);
+                props.response.rawHeaders = props.response.rawHeaders.filter(
+                  ([name]: [string, string]) =>
+                    name.toLowerCase() !== "content-type",
+                );
+                props.response.rawHeaders.push(["content-type", contentType]);
+              }
+            });
           Tap.tap(
             next.hooks.error.request,
             (context: {
@@ -73,7 +109,7 @@ export default function ProxyTab({
       cancelled = true;
       clearTimeout(timeout.current);
     };
-  }, [url, revision, attempt]);
+  }, [url, revision, attempt, gameDocument]);
   useEffect(
     () => () => {
       if (frame.current) {
@@ -92,7 +128,7 @@ export default function ProxyTab({
       <iframe
         ref={iframe}
         className="browser-frame"
-        title="Satona Browser"
+        title={title}
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads allow-pointer-lock allow-presentation"
         allow="fullscreen; autoplay; encrypted-media; picture-in-picture; gamepad; clipboard-read; clipboard-write"
         onLoad={() => {
